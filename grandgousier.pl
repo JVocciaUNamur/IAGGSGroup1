@@ -1,36 +1,71 @@
+% grandgousier.pl
+
+:- [vins].
+:- [operateurs].
+:- [extraction_mots_cles].
+:- [query].
+:- [levenshtein].
+:- [heuristiques].
+:- [synonymes].
+:- [regles].
+:- [logique_vins].
+
 /* --------------------------------------------------------------------- */
 /*                                                                       */
-/*        PRODUIRE_REPONSE(L_Mots,L_Lignes_reponse) :                    */
+/*        PRODUIRE_REPONSE_HEURISTIQUE(L_Mots,L_Lignes_reponse) :        */
 /*                                                                       */
 /*        Input : une liste de mots L_Mots representant la question      */
 /*                de l'utilisateur                                       */
 /*        Output : une liste de liste de lignes correspondant a la       */
 /*                 reponse fournie par le bot                            */
 /*                                                                       */
-/*        NB Pour l'instant le predicat retourne dans tous les cas       */
-/*            [  [je, ne, sais, pas, '.'],                               */
-/*               [les, etudiants, vont, m, '\'', aider, '.'],            */
-/*               ['vous le verrez !']                                    */
-/*            ]                                                          */
-/*                                                                       */
-/*        Je ne doute pas que ce sera le cas ! Et vous souhaite autant   */
-/*        d'amusement a coder le predicat que j'ai eu a ecrire           */
-/*        cet enonce et ce squelette de solution !                       */
-/*                                                                       */
 /* --------------------------------------------------------------------- */
 
+produire_reponse_heuristique([fin], [L1]) :-
+    L1 = [merci, de, m, '\'', avoir, consulte], !.
 
-/*                      !!!    A MODIFIER   !!!                          */
+produire_reponse(Question, Reponse) :-
+    % Extraction des mots-clés
+    trouver_mots_cles(Question, MotsCles),
+    write('Mots clés trouvés : '), writeln(MotsCles), % Debug
 
-produire_reponse([fin],[L1]) :-
-   L1 = [merci, de, m, '\'', avoir, consulte], !.    
+    % Recherche des réponses possibles
+    trouver_toutes_reponses(MotsCles, Question, ListeReponses),
+    write('Réponses trouvées : '), writeln(ListeReponses), % Debug
 
-produire_reponse(L,[L1,L2, L3]) :-
-   L1 = [je, ne, sais, pas, '.'],
-   L2 = [les, etudiants, vont, m, '\'', aider, '.' ],
-   L3 = ['vous le verrez !'].
+    % Filtrer les réponses non pertinentes
+    include(non_vide, ListeReponses, FiltreReponses),
+    write('Réponses filtrées : '), writeln(FiltreReponses), % Debug
 
+    % Choisir la meilleure réponse ou donner un message d'erreur
+    (   FiltreReponses = []
+    ->  Reponse = ['Je suis désolé, je ne trouve pas de réponse.']
+    ;   choisir_meilleure_reponse(FiltreReponses, Reponse)
+    ).
 
+% Vérifie si une réponse est valide
+non_vide(L) :- L \= [].
+
+trouver_toutes_reponses([], _, []).
+trouver_toutes_reponses([Mot-_|Rest], L_mots, [Reponse|AutresReponses]) :-
+    (   regle_rep(Mot, _, Pattern, ReponsePotentielle),
+        verifier_pattern(Pattern, L_mots)
+    ->  Reponse = ReponsePotentielle
+    ;   Reponse = []),
+    trouver_toutes_reponses(Rest, L_mots, AutresReponses).
+
+generer_reponse([], _, [['Je suis désolé, je ne trouve pas de réponse.']]).
+generer_reponse([Mot-_|Rest], L_mots, L_lignes_reponse) :-
+    (   regle_rep(Mot, _, Pattern, Reponse),
+        verifier_pattern(Pattern, L_mots)
+    ->  LignesReponseActuelle = Reponse
+    ;   LignesReponseActuelle = []),
+    generer_reponse(Rest, L_mots, LignesReponseSuivante),
+    append(LignesReponseActuelle, LignesReponseSuivante, L_lignes_reponse).
+
+% Vérifie si tous les mots du Pattern sont présents dans la liste de mots
+verifier_pattern(Pattern, Mots) :-
+    subset(Pattern, Mots).
 
 /* --------------------------------------------------------------------- */
 /*                                                                       */
@@ -39,180 +74,10 @@ produire_reponse(L,[L1,L2, L3]) :-
 /*                                                                       */
 /* --------------------------------------------------------------------- */
 
-% lire_question(L_Mots) 
+% lire_question(L_Mots)
 
-lire_question(LMots) :- read_atomics(LMots).
-
-
-
-/*****************************************************************************/
-% my_char_type(+Char,?Type)
-%    Char is an ASCII code.
-%    Type is whitespace, punctuation, numeric, alphabetic, or special.
-
-my_char_type(46,period) :- !.
-my_char_type(X,alphanumeric) :- X >= 65, X =< 90, !.
-my_char_type(X,alphanumeric) :- X >= 97, X =< 123, !.
-my_char_type(X,alphanumeric) :- X >= 48, X =< 57, !.
-my_char_type(X,whitespace) :- X =< 32, !.
-my_char_type(X,punctuation) :- X >= 33, X =< 47, !.
-my_char_type(X,punctuation) :- X >= 58, X =< 64, !.
-my_char_type(X,punctuation) :- X >= 91, X =< 96, !.
-my_char_type(X,punctuation) :- X >= 123, X =< 126, !.
-my_char_type(_,special).
-
-
-/*****************************************************************************/
-% lower_case(+C,?L)
-%   If ASCII code C is an upper-case letter, then L is the
-%   corresponding lower-case letter. Otherwise L=C.
-
-lower_case(X,Y) :-
-	X >= 65,
-	X =< 90,
-	Y is X + 32, !.
-
-lower_case(X,X).
-
-
-/*****************************************************************************/
-% read_lc_string(-String)
-%  Reads a line of input into String as a list of ASCII codes,
-%  with all capital letters changed to lower case.
-
-read_lc_string(String) :-
-	get0(FirstChar),
-	lower_case(FirstChar,LChar),
-	read_lc_string_aux(LChar,String).
-
-read_lc_string_aux(10,[]) :- !.  % end of line
-
-read_lc_string_aux(-1,[]) :- !.  % end of file
-
-read_lc_string_aux(LChar,[LChar|Rest]) :- read_lc_string(Rest).
-
-
-/*****************************************************************************/
-% extract_word(+String,-Rest,-Word) (final version)
-%  Extracts the first Word from String; Rest is rest of String.
-%  A word is a series of contiguous letters, or a series
-%  of contiguous digits, or a single special character.
-%  Assumes String does not begin with whitespace.
-
-extract_word([C|Chars],Rest,[C|RestOfWord]) :-
-	my_char_type(C,Type),
-	extract_word_aux(Type,Chars,Rest,RestOfWord).
-
-extract_word_aux(special,Rest,Rest,[]) :- !.
-   % if Char is special, don't read more chars.
-
-extract_word_aux(Type,[C|Chars],Rest,[C|RestOfWord]) :-
-	my_char_type(C,Type), !,
-	extract_word_aux(Type,Chars,Rest,RestOfWord).
-
-extract_word_aux(_,Rest,Rest,[]).   % if previous clause did not succeed.
-
-
-/*****************************************************************************/
-% remove_initial_blanks(+X,?Y)
-%   Removes whitespace characters from the
-%   beginning of string X, giving string Y.
-
-remove_initial_blanks([C|Chars],Result) :-
-	my_char_type(C,whitespace), !,
-	remove_initial_blanks(Chars,Result).
-
-remove_initial_blanks(X,X).   % if previous clause did not succeed.
-
-
-/*****************************************************************************/
-% digit_value(?D,?V)
-%  Where D is the ASCII code of a digit,
-%  V is the corresponding number.
-
-digit_value(48,0).
-digit_value(49,1).
-digit_value(50,2).
-digit_value(51,3).
-digit_value(52,4).
-digit_value(53,5).
-digit_value(54,6).
-digit_value(55,7).
-digit_value(56,8).
-digit_value(57,9).
-
-
-/*****************************************************************************/
-% string_to_number(+S,-N)
-%  Converts string S to the number that it
-%  represents, e.g., "234" to 234.
-%  Fails if S does not represent a nonnegative integer.
-
-string_to_number(S,N) :-
-	string_to_number_aux(S,0,N).
-
-string_to_number_aux([D|Digits],ValueSoFar,Result) :-
-	digit_value(D,V),
-	NewValueSoFar is 10*ValueSoFar + V,
-	string_to_number_aux(Digits,NewValueSoFar,Result).
-
-string_to_number_aux([],Result,Result).
-
-
-/*****************************************************************************/
-% string_to_atomic(+String,-Atomic)
-%  Converts String into the atom or number of
-%  which it is the written representation.
-
-string_to_atomic([C|Chars],Number) :-
-	string_to_number([C|Chars],Number), !.
-
-string_to_atomic(String,Atom) :- name(Atom,String).
-  % assuming previous clause failed.
-
-
-/*****************************************************************************/
-% extract_atomics(+String,-ListOfAtomics) (second version)
-%  Breaks String up into ListOfAtomics
-%  e.g., " abc def  123 " into [abc,def,123].
-
-extract_atomics(String,ListOfAtomics) :-
-	remove_initial_blanks(String,NewString),
-	extract_atomics_aux(NewString,ListOfAtomics).
-
-extract_atomics_aux([C|Chars],[A|Atomics]) :-
-	extract_word([C|Chars],Rest,Word),
-	string_to_atomic(Word,A),       % <- this is the only change
-	extract_atomics(Rest,Atomics).
-
-extract_atomics_aux([],[]).
-
-
-/*****************************************************************************/
-% clean_string(+String,-Cleanstring)
-%  removes all punctuation characters from String and return Cleanstring
-
-clean_string([C|Chars],L) :-
-	my_char_type(C,punctuation),
-	clean_string(Chars,L), !.
-clean_string([C|Chars],[C|L]) :-
-	clean_string(Chars,L), !.
-clean_string([C|[]],[]) :-
-	my_char_type(C,punctuation), !.
-clean_string([C|[]],[C]).
-
-
-/*****************************************************************************/
-% read_atomics(-ListOfAtomics)
-%  Reads a line of input, removes all punctuation characters, and converts
-%  it into a list of atomic terms, e.g., [this,is,an,example].
-
-read_atomics(ListOfAtomics) :-
-	read_lc_string(String),
-	clean_string(String,Cleanstring),
-	extract_atomics(Cleanstring,ListOfAtomics).
-
-
+% Utilisez le prédicat défini dans extraction_mots_cles.pl
+% lire_question(LMots) :- extraction_mots_cles:lire_question(LMots).
 
 /* --------------------------------------------------------------------- */
 /*                                                                       */
@@ -220,30 +85,35 @@ read_atomics(ListOfAtomics) :-
 /*                                                                       */
 /* --------------------------------------------------------------------- */
 
-ecrire_reponse(L) :-
-   nl, write('GGS :'),
-   ecrire_li_reponse(L,1,1).
+% Affiche les réponses sous forme lisible
+ecrire_reponse([]) :- nl.
+ecrire_reponse([Ligne|Rest]) :-
+    (   is_list(Ligne)
+    ->  atomic_list_concat(Ligne, ' ', Texte)
+    ;   Texte = Ligne),
+    write('GGS : '), write(Texte), nl,
+    ecrire_reponse(Rest).
 
 % ecrire_li_reponse(Ll,M,E)
 % input : Ll, liste de listes de mots (tout en minuscules)
-%         M, indique si le premier caractere du premier mot de 
+%         M, indique si le premier caractere du premier mot de
 %            la premiere ligne doit etre mis en majuscule (1 si oui, 0 si non)
-%         E, indique le nombre d'espaces avant ce premier mot 
+%         E, indique le nombre d'espaces avant ce premier mot
 
-ecrire_li_reponse([],_,_) :- 
+ecrire_li_reponse([],_,_) :-
     nl.
 
-ecrire_li_reponse([Li|Lls],Mi,Ei) :- 
+ecrire_li_reponse([Li|Lls],Mi,Ei) :-
    ecrire_ligne(Li,Mi,Ei,Mf),
    ecrire_li_reponse(Lls,Mf,2).
 
 % ecrire_ligne(Li,Mi,Ei,Mf)
 % input : Li, liste de mots a ecrire
 %         Mi, Ei booleens tels que decrits ci-dessus
-% output : Mf, booleen tel que decrit ci-dessus a appliquer 
+% output : Mf, booleen tel que decrit ci-dessus a appliquer
 %          a la ligne suivante, si elle existe
 
-ecrire_ligne([],M,_,M) :- 
+ecrire_ligne([],M,_,M) :-
    nl.
 
 ecrire_ligne([M|L],Mi,Ei,Mf) :-
@@ -274,7 +144,6 @@ ecrire_mot(M,1,0,E,1) :-
 espace(0).
 espace(N) :- N>0, Nn is N-1, write(' '), espace(Nn).
 
-
 /* --------------------------------------------------------------------- */
 /*                                                                       */
 /*                            TEST DE FIN                                */
@@ -283,42 +152,42 @@ espace(N) :- N>0, Nn is N-1, write(' '), espace(Nn).
 
 fin(L) :- member(fin,L).
 
-
 /* --------------------------------------------------------------------- */
 /*                                                                       */
 /*                         BOUCLE PRINCIPALE                             */
 /*                                                                       */
 /* --------------------------------------------------------------------- */
 
-grandgousier :- 
+grandgousier :-
+    nl,
+    write('Bonjour, je suis Grandgousier, GGS pour les intimes, '), nl,
+	write('conseiller en vin. En quoi puis-je vous être utile ?'), nl,
+    lire_question(Question),
+    (   Question = [fin]
+    ->  write('GGS : Merci de m\'avoir consulté.'), nl
+    ;   produire_reponse(Question, Reponse),
+        afficher_reponse(Reponse),
+        grandgousier).
+		
+lire_question(Question, MotsCles) :-
+    extraction_mots_cles:extraire_mots(Question, MotsCles).
 
-   nl, nl, nl,
-   write('Bonjour, je suis Grandgousier, GGS pour les intimes,'), nl,
-   write('conseiller en vin. En quoi puis-je vous etre utile ?'), 
-   nl, nl, 
+% Affiche la réponse finalisée
+afficher_reponse([]) :-
+    write('GGS : Je suis désolé, je ne trouve pas de réponse.'), nl.
+afficher_reponse(Liste) :-
+    Liste \= [],
+    afficher_lignes(Liste).
 
-   repeat,
-      write('Vous : '),
-      lire_question(L_Mots),
-      produire_reponse(L_Mots,L_ligne_reponse),
-      ecrire_reponse(L_ligne_reponse),
-   fin(L_Mots), !.
-   
-
+afficher_lignes([]).
+afficher_lignes([Ligne|Rest]) :-
+    Ligne \= [],
+    write('GGS : '), write(Ligne), nl,
+    afficher_lignes(Rest).
 /* --------------------------------------------------------------------- */
 /*                                                                       */
 /*             ACTIVATION DU PROGRAMME APRES COMPILATION                 */
 /*                                                                       */
 /* --------------------------------------------------------------------- */
 
-:- grandgousier.
-
-
-
-
-
-
-
-
-
-
+%:- grandgousier.
