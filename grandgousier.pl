@@ -1,5 +1,5 @@
 % grandgousier.pl
-
+:- debug.
 :- [vins].
 :- [operateurs].
 :- [extraction_mots_cles].
