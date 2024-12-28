@@ -23,7 +23,7 @@ regle_rep('prix', _, [prix, vin], Reponse) :-
     ).
 
 % Règle générique pour rechercher des vins spécifiques (e.g., Bourgogne, Bordeaux)
-regle_rep('bourgogne', _, _, Reponse) :-
+regle_rep('bourgogne', _, [bourgogne], Reponse) :-
     findall(Nom,
         (nom(_, Nom), synonyme(Synonyme, 'bourgogne'), sub_string(Nom, _, _, _, Synonyme)),
         ListeVinsBruts),

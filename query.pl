@@ -1,96 +1,98 @@
-:- [heuristiques].
-:- [synonymes].
-:- [levenshtein].
+:- debug.
+/*---------------------------------------
+DÃ©finition d'une recherche dans la base de connaissances.
+
+query(Lproj, Lfilters, Skip, Take, Sort)
+- Lproj = un ensemble non vide de valeurs a sÃ©lectionner, ex: [nom, annee, mois].
+- Lfilters = une liste de filtres, ex: [[annee, eq, 2014], [couleur, eq, rouge]].
+- Skip = Nombre >= 0, nombre d'Ã©lÃ©ments a sauter dans le rÃ©sultat.
+- Take = Nombre >=0, nombre d'Ã©lÃ©ments a retourner dans le rÃ©sultat.
+- Sort = asc(Proj), desc(Proj). Proj = Ã©lÃ©ment de l'ensemble LProj.
+
+execute_query(Query, LVin)
+    Query = query(Lproj, Lfilters, Skip, Take, Sort),
+    LVin = liste de rÃ©sultats ex: [[2014, 'chateau latour', 'loire'], [2015, 'mon bazillac', 'bordeau']].
+--------------------------------------*/
+%
+
+
 :- [vins].
+:- [common].
 
+.
 
-% Liste des mots-bruit
-mot_bruit("quel").
-mot_bruit("quels").
-mot_bruit("le").
-mot_bruit('sont').
-mot_bruit("la").
-mot_bruit("les").
-mot_bruit("des").
-mot_bruit("un").
-mot_bruit("une").
-mot_bruit("pour").
-mot_bruit("avec").
-mot_bruit("de").
-mot_bruit("du").
-% mot_bruit("et").
-mot_bruit('disponibles').
-mot_bruit('?').
+execute_query(query(Lproj, Lfilters, Skip, Take, Sort), Lvin) :-
+    findall(Id, (
+        apply_filters(Lfilters, Id) 
+    ), Lid),
+    apply_projections(Lid, Lproj, LResults),
+    apply_sort(Sort, Lproj, LResults, LSorted),
+    skip(Skip, LSorted, LRest),
+    take(Take, LRest, Lvin).
 
-% Filtrer les mots-bruit d'une question
-filtrer_mots_bruit([], []).
-filtrer_mots_bruit([Mot|Reste], Filtre) :-
-    mot_bruit(Mot),
-    !,
-    filtrer_mots_bruit(Reste, Filtre).
-filtrer_mots_bruit([Mot|Reste], [Mot|FiltreReste]) :-
-    filtrer_mots_bruit(Reste, FiltreReste).
-	
-% Filtrer et préparer la question
-preparer_question(Question, QuestionPreparee) :-
-    filtrer_mots_bruit(Question, QuestionFiltre),
-    appliquer_heuristiques(QuestionFiltre, QuestionCorrigee),
-    appliquer_synonymes(QuestionCorrigee, QuestionPreparee).
+apply_sort(asc(Col), Projections, Lin, Lout) :- 
+    indexOf(Col, Projections, SortIndex),
+    columnSort(Lin, ascending, SortIndex, Lout).
 
-% Identifier un vin mentionné dans une question
-identifier_vin(Question, NomVin, Tolerance) :-
-    maplist(canonicaliser_mot, Question, CanonicalQuestion),
-    trouver_meilleure_correspondance(CanonicalQuestion, NomVin, Tolerance).
+apply_sort(desc(Col), Projections, Lin, Lout) :- 
+    indexOf(Col, Projections, SortIndex),
+    columnSort(Lin, descending, SortIndex, Lout).
 
-% Vérifier si chaque mot de la question correspond à au moins un mot du vin
-tous_mots_present_tolerant([], _).
-tous_mots_present_tolerant([MotQ|ResteQ], MotsVin) :-
-    findall(Distance, (member(MotV, MotsVin), levenshtein(MotQ, MotV, Distance)), Distances),
-    min_list(Distances, MinDistance),
-    write('Mot question : '), write(MotQ), write(', Distances : '), write(Distances), write(', Min : '), write(MinDistance), nl,
-    MinDistance =< 2,  % Tolérance stricte par mot
-    tous_mots_present_tolerant(ResteQ, MotsVin).
+apply_filters([], Id) :- nom(Id, _).
+apply_filters([[couleur, eq ,C] | Rest], Id)
+    :- couleur(Id, C),
+    apply_filters(Rest, Id).
 
-% Trouver la meilleure correspondance parmi les noms
-touver_meilleure_correspondance(Question, MeilleurVin, Tolerance) :-
-    write('Question analysée : '), write(Question), nl,
-    findall(
-        [Distance, NomVin],
-        (nom(_, NomVin),
-         normaliser_nom(NomVin, NomVinNormalise),
-         write('Nom vin normalisé : '), write(NomVinNormalise), nl,
-         split_string(NomVinNormalise, " ", "", NomVinMots),
-         (tous_mots_present_tolerant(Question, NomVinMots) ->
-            somme_distances_par_mot(Question, NomVinMots, Distance)
-         ;
-            fail),
-         write('Distance calculée pour : '), write(NomVin), write(' -> '), write(Distance), nl,
-         Distance =< Tolerance),
-        Correspondances
-    ),
-    (Correspondances \= [] ->
-        sort(Correspondances, [[_, MeilleurVin]|_])
-    ; write('Aucune correspondance trouvée.'), nl, fail).
+apply_filters([[annee, eq, A] | Rest], Id)
+    :- annee(Id, A),
+    apply_filters(Rest, Id).
 
-% Calculer les distances avec tolérance par mot
-somme_distances_par_mot([], [], 0).
-somme_distances_par_mot([MotQ|ResteQ], MotsVin, TotalDistance) :-
-    findall(Distance, (member(MotV, MotsVin), levenshtein(MotQ, MotV, Distance)), Distances),
-    min_list(Distances, MinDistance),
-    write('Mot question : '), write(MotQ), write(', Distances : '), write(Distances), write(', Min : '), write(MinDistance), nl,
-    (MinDistance =< 2 ->
-        somme_distances_par_mot(ResteQ, MotsVin, ResteDistance),
-        TotalDistance is MinDistance + ResteDistance
-    ;
-        fail).
+apply_filters([[annee, gt, A] | Rest], Id)
+    :- annee(Id, X),
+    X > A,
+    apply_filters(Rest, Id).
 
-% Générer une réponse
-produire_reponse(Question, Reponse) :-
-    preparer_question(Question, QuestionPreparee),
-    write('Question préparée : '), write(QuestionPreparee), nl,
-    identifier_vin(QuestionPreparee, NomVin, 5),  % Appel de la fonction
-    !,
-    prix_du_vin_par_nom(NomVin, Prix),
-    format(atom(ReponseTexte), "Le vin '~w' coûte ~w par bouteille.", [NomVin, Prix]),
-    Reponse = [ReponseTexte].
-produire_reponse(_, [["Je suis désolé, je ne trouve pas d'information sur ce vin."]]).
+apply_filters([[annee, gte, A] | Rest], Id)
+    :- annee(Id, X),
+    X >= A,
+    apply_filters(Rest, Id).
+
+apply_filters([[annee, lt, A] | Rest], Id)
+    :- annee(Id, X),
+    X < A,
+    apply_filters(Rest, Id).
+
+apply_filters([[annee, te, A] | Rest], Id)
+    :- annee(Id, X),
+    X =< A,
+    apply_filters(Rest, Id).
+
+apply_projections([], _, []).
+apply_projections([Id | Rest], Projections, [Value | RestResult]) :-
+    apply_projections(Id, Projections, Value),
+    apply_projections(Rest, Projections, RestResult).
+apply_projections(Id, Projections, Result) :-
+    get_projections(Id, Projections, Result).
+
+get_projections(_, [], []).
+get_projections(Id, [Projection | Rest], [CurrentValue | OtherValues]) :-
+    get_projection(Id, Projection, CurrentValue),
+    get_projections(Id, Rest, OtherValues).
+
+get_projection(Id, nom, Value) :-
+    nom(Id, NomList),
+    atomic_list_concat(NomList, ' ', Value).
+get_projection(Id, annee, Value) :-
+    annee(Id, Annee),
+    atom_number(Value, Annee).
+get_projection(Id, prix, Value) :-
+    prix(Id, PrixMin, PrixMax),
+    format(atom(Value), 'Prix: ~2f htva - ~2f tvac', [PrixMin, PrixMax]).
+get_projection(Id, couleur, Value) :-
+    couleur(Id, Couleur),
+    Value = Couleur.
+get_projection(Id, appelation, Value) :-
+    appelation(Id, Appellation),
+    Value = Appellation.
+
+test_query(L) :- execute_query(query([couleur, nom, annee, prix], [[annee, gt, 2014], [couleur, eq, rouge]], 0, 5, asc(annee)), L).
