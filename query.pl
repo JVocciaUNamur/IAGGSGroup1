@@ -33,7 +33,7 @@ parse_vin(noeud_vin([Couleur])) --> const_det_couleur, parse_couleur(Couleur).
 parse_vin(noeud_vin([Appelation])) --> const_det_appelation, parse_appelation(Appelation).
 parse_vin(noeud_vin([Appelation, Localite])) --> const_det_appelation, parse_appelation(Appelation), const_de, parse_localite(Localite).
 parse_vin(noeud_vin([Appelation, Couleur])) --> const_det_appelation, parse_appelation(Appelation), parse_couleur(Couleur).
-parse_vin(noeud_vin([Localite, Couleur])) --> const_vin, const_de, parse_localite, parse_couleur.
+parse_vin(noeud_vin([Localite, Couleur])) --> const_vin, const_de, parse_localite(Localite), parse_couleur(Couleur).
 parse_question(Question) --> [_], parse_question(Question).
 parse_question(noeud_question([Vin])) --> const_mot_instruction, parse_vin(Vin). 
 parse_question(noeud_question([Vin, Prix])) --> const_mot_instruction, parse_vin(Vin), parse_prix(Prix). 
@@ -146,7 +146,7 @@ create_filters([noeud_annee(Op, Annee) | T], [[annee, Op, Annee] | Restfilters])
     create_filters(T, Restfilters).
 create_filters([noeud_prix(Op, Prix) | T], [[prix, Op, Prix] | Restfilters]) :-
     create_filters(T, Restfilters).
-create_filters([X | T], Filters) :- create_filters(T, Filters).
+create_filters([_ | T], Filters) :- create_filters(T, Filters).
 
 create_take(L, 1) :- member(bouche, L).
 create_take(L, 1) :- member(nez, L).
@@ -182,11 +182,18 @@ apply_filters([[nom, eq, L] | Rest], Id)
     apply_filters(Rest, Id).
 
 apply_filters([[localite, eq, L] | Rest], Id) 
-    :- localite(Id, _, L),
+    :- localite(Id, _, X),
+    downcase_atom(X, L),
     apply_filters(Rest, Id).
 
 apply_filters([[localite, eq, L] | Rest], Id) 
-    :- localite(Id, L, _),
+    :- localite(Id, X, _),
+    downcase_atom(X, L),
+    apply_filters(Rest, Id).
+
+apply_filters([[appelation, eq, L] | Rest], Id)
+    :- appelation(Id, X),
+    downcase_atom(X, L),
     apply_filters(Rest, Id).
 
 apply_filters([[couleur, eq ,C] | Rest], Id)
