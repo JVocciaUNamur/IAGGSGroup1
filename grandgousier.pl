@@ -25,25 +25,25 @@ produire_reponse_heuristique([fin], [L1]) :-
     L1 = [merci, de, m, '\'', avoir, consulte], !.
 
 produire_reponse(Question, Reponse) :-
-    % Extraction des mots-clÈs
+    % Extraction des mots-cl√©s
     trouver_mots_cles(Question, MotsCles),
-    write('Mots clÈs trouvÈs : '), writeln(MotsCles), % Debug
+    write('Mots cl√©s trouv√©s : '), writeln(MotsCles), % Debug
 
-    % Recherche des rÈponses possibles
+    % Recherche des r√©ponses possibles
     trouver_toutes_reponses(MotsCles, Question, ListeReponses),
-    write('RÈponses trouvÈes : '), writeln(ListeReponses), % Debug
+    write('R√©ponses trouv√©es : '), writeln(ListeReponses), % Debug
 
-    % Filtrer les rÈponses non pertinentes
+    % Filtrer les r√©ponses non pertinentes
     include(non_vide, ListeReponses, FiltreReponses),
-    write('RÈponses filtrÈes : '), writeln(FiltreReponses), % Debug
+    write('R√©ponses filtr√©es : '), writeln(FiltreReponses), % Debug
 
-    % Choisir la meilleure rÈponse ou donner un message d'erreur
+    % Choisir la meilleure r√©ponse ou donner un message d'erreur
     (   FiltreReponses = []
-    ->  Reponse = ['Je suis dÈsolÈ, je ne trouve pas de rÈponse.']
+    ->  Reponse = ['Je suis d√©sol√©, je ne trouve pas de r√©ponse.']
     ;   choisir_meilleure_reponse(FiltreReponses, Reponse)
     ).
 
-% VÈrifie si une rÈponse est valide
+% V√©rifie si une r√©ponse est valide
 non_vide(L) :- L \= [].
 
 trouver_toutes_reponses([], _, []).
@@ -54,7 +54,7 @@ trouver_toutes_reponses([Mot-_|Rest], L_mots, [Reponse|AutresReponses]) :-
     ;   Reponse = []),
     trouver_toutes_reponses(Rest, L_mots, AutresReponses).
 
-generer_reponse([], _, [['Je suis dÈsolÈ, je ne trouve pas de rÈponse.']]).
+generer_reponse([], _, [['Je suis d√©sol√©, je ne trouve pas de r√©ponse.']]).
 generer_reponse([Mot-_|Rest], L_mots, L_lignes_reponse) :-
     (   regle_rep(Mot, _, Pattern, Reponse),
         verifier_pattern(Pattern, L_mots)
@@ -63,7 +63,7 @@ generer_reponse([Mot-_|Rest], L_mots, L_lignes_reponse) :-
     generer_reponse(Rest, L_mots, LignesReponseSuivante),
     append(LignesReponseActuelle, LignesReponseSuivante, L_lignes_reponse).
 
-% VÈrifie si tous les mots du Pattern sont prÈsents dans la liste de mots
+% V√©rifie si tous les mots du Pattern sont pr√©sents dans la liste de mots
 verifier_pattern(Pattern, Mots) :-
     subset(Pattern, Mots).
 
@@ -76,7 +76,7 @@ verifier_pattern(Pattern, Mots) :-
 
 % lire_question(L_Mots)
 
-% Utilisez le prÈdicat dÈfini dans extraction_mots_cles.pl
+% Utilisez le pr√©dicat d√©fini dans extraction_mots_cles.pl
 % lire_question(LMots) :- extraction_mots_cles:lire_question(LMots).
 
 /* --------------------------------------------------------------------- */
@@ -85,7 +85,7 @@ verifier_pattern(Pattern, Mots) :-
 /*                                                                       */
 /* --------------------------------------------------------------------- */
 
-% Affiche les rÈponses sous forme lisible
+% Affiche les r√©ponses sous forme lisible
 ecrire_reponse([]) :- nl.
 ecrire_reponse([Ligne|Rest]) :-
     (   is_list(Ligne)
@@ -161,10 +161,10 @@ fin(L) :- member(fin,L).
 grandgousier :-
     nl,
     write('Bonjour, je suis Grandgousier, GGS pour les intimes, '), nl,
-	write('conseiller en vin. En quoi puis-je vous Ítre utile ?'), nl,
+	write('conseiller en vin. En quoi puis-je vous √™tre utile ?'), nl,
     lire_question(Question),
     (   Question = [fin]
-    ->  write('GGS : Merci de m\'avoir consultÈ.'), nl
+    ->  write('GGS : Merci de m\'avoir consult√©.'), nl
     ;   produire_reponse(Question, Reponse),
         afficher_reponse(Reponse),
         grandgousier).
@@ -172,9 +172,9 @@ grandgousier :-
 lire_question(Question, MotsCles) :-
     extraction_mots_cles:extraire_mots(Question, MotsCles).
 
-% Affiche la rÈponse finalisÈe
+% Affiche la r√©ponse finalis√©e
 afficher_reponse([]) :-
-    write('GGS : Je suis dÈsolÈ, je ne trouve pas de rÈponse.'), nl.
+    write('GGS : Je suis d√©sol√©, je ne trouve pas de r√©ponse.'), nl.
 afficher_reponse(Liste) :-
     Liste \= [],
     afficher_lignes(Liste).
