@@ -10,6 +10,17 @@
 :- discontiguous nez/2.
 :- discontiguous localite/3.
 
+accord(viandes, 'mouton').
+accord(viandes, 'boeuf').
+accord(viandes, 'veau').
+accord(viandes, 'porc').
+accord(viandes, 'steak').
+accord(viandes, 'viande').
+
+accord(poissons, 'cabilleau').
+accord(poissons, 'sole').
+accord(poissons, 'poisson').
+
 nom(1, ['Chateau', 'Moulin', 'de', 'Mallet']).
 annee(1, 2014).
 appelation(1, 'Bordeaux').
@@ -19,7 +30,7 @@ localite(1, 'Castillon-la-Bataille', 'Bordeaux').
 nez(1, ['Fruit', 'rouges', 'cerise', 'mure']).
 bouche(1, ['un', 'vin', 'tres', 'plaisant']).
 robe(1, ['Grenat', 'aux', 'reflets', 'rubis']).
-accord(1, bordeaux).
+accord(1, viandes).
 description(1, [['Un', 'Joli', 'Vin', ',', 'classique', ',', 'polyvalent', ',', 'avec', 'un', 'bel', 'eventail', 'aromatique', 'et', 'des', 'fins', 'tannins'], ['Tres', 'bel', 'equilibre', 'de', 'l', 'ensemble', 'et', 'un', 'boise', 'bien', 'integre']]).
 
 nom(2, ['Domaine', 'de', 'La', 'Riviere']).

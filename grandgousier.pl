@@ -1,14 +1,9 @@
 % grandgousier.pl
 
 :- [vins].
-:- [operateurs].
-:- [extraction_mots_cles].
 :- [query].
-:- [levenshtein].
-:- [heuristiques].
-:- [synonymes].
 :- [regles].
-:- [logique_vins].
+:- [input].
 
 /* --------------------------------------------------------------------- */
 /*                                                                       */
@@ -25,6 +20,12 @@ produire_reponse_heuristique([fin], [L1]) :-
     L1 = [merci, de, m, '\'', avoir, consulte], !.
 
 produire_reponse(Question, Reponse) :-
+    % todo ajouter correction: remplacer tout les mots par minuscules et remplacer les noms de vins
+    % de sorte a ce qu'ils soient formattés comme ça: chateau_mallet_bidule, voir query known_nom_vin().
+
+    % TODO ajouter parsing de query
+    % TODO passer query a regle
+
     % Extraction des mots-clés
     trouver_mots_cles(Question, MotsCles),
     write('Mots clés trouvés : '), writeln(MotsCles), % Debug

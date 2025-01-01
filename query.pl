@@ -108,7 +108,6 @@ extract_filters(Lmot, Filters) :-
     findall(Filter,
         (extract_filter(Lmot, Filter)),
         Filters).
-
 % Parsing : ?- phrase(parse_vin(Arbre), [je, cherche, un, vin de, 'Bordeaux'], []).
 
 % Execute Query
@@ -153,7 +152,7 @@ apply_filters([[annee, lt, A] | Rest], Id)
     X < A,
     apply_filters(Rest, Id).
 
-apply_filters([[annee, te, A] | Rest], Id)
+apply_filters([[annee, lte, A] | Rest], Id)
     :- annee(Id, X),
     X =< A,
     apply_filters(Rest, Id).
