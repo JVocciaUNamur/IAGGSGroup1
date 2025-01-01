@@ -18,8 +18,7 @@ execute_query(Query, LVin)
 :- [vins].
 :- [common].
 
-% CREATE QUERY
-
+% parse question 
 known_localite(X) :- localite(_, _, Y), downcase_atom(Y, X),!.
 known_localite(X) :- localite(_, Y, _), downcase_atom(Y, X),!.
 known_appelation(X) :- appelation(_, Y), downcase_atom(Y, X),!.
@@ -28,6 +27,7 @@ parse_vin(Arbre) --> [_], parse_vin(Arbre).
 parse_vin(noeud_vin([Couleur, Localite])) --> const_vin, parse_couleur(Couleur), const_de, parse_localite(Localite).
 parse_vin(noeud_vin([Localite])) --> const_vin, const_de, parse_localite(Localite).
 parse_vin(noeud_vin([Couleur])) --> const_vin, parse_couleur(Couleur).
+parse_vin(noeud_vin([])) --> const_vin.
 parse_vin(noeud_vin([Couleur, Localite])) --> const_det_couleur, parse_couleur(Couleur), const_de, parse_localite(Localite).
 parse_vin(noeud_vin([Couleur])) --> const_det_couleur, parse_couleur(Couleur).
 parse_vin(noeud_vin([Appelation])) --> const_det_appelation, parse_appelation(Appelation).
@@ -42,7 +42,6 @@ parse_question(noeud_question([bouche, Nom])) --> const_mot_question, const_verb
 parse_question(noeud_question([bouche, Nom])) --> const_mot_question, const_verbe_question, const_bouche, const_det_nom_vin, parse_nom_vin(Nom).
 parse_question(noeud_question([nez, Nom])) --> const_mot_question, const_verbe_question, const_det_nom_vin, parse_nom_vin(Nom), const_nez.
 parse_question(noeud_question([nez, Nom])) --> const_mot_question, const_verbe_question, const_nez, const_det_nom_vin, parse_nom_vin(Nom).
-
 parse_couleur(noeud_couleur(rouge)) --> [rouge].
 parse_couleur(noeud_couleur(rouge)) --> [rouges].
 parse_couleur(noeud_couleur(blanc)) --> [blanc].
@@ -82,8 +81,10 @@ const_plus_recent() --> [moins], [vieux], [que].
 const_millesime() --> [millesime].
 const_plus_cher() --> [prix], [superieur], [a].
 const_plus_cher() --> [plus], [cher], [que].
+const_plus_cher() --> [a], [plus], [de].
 const_moins_cher() --> [prix], [inferieur], [a].
 const_moins_cher() --> [moins], [cher], [que].
+const_moins_cher() --> [a], [moins], [de].
 const_mot_instruction() --> [lister].
 const_mot_instruction() --> [liste].
 const_mot_instruction() --> [chercher].
@@ -103,12 +104,56 @@ const_mot_question() --> [quel].
 const_mot_question() --> [quelle].
 const_verbe_question() --> [donne].
 const_verbe_question() --> [vaut].
-
-extract_filters(Lmot, Filters) :-
-    findall(Filter,
-        (extract_filter(Lmot, Filter)),
-        Filters).
 % Parsing : ?- phrase(parse_vin(Arbre), [je, cherche, un, vin de, 'Bordeaux'], []).
+
+% create query from question
+create_query(noeud_question(L), query(Lproj, Lfilters, 0, Take, Sort)) :- 
+    create_projections(L, Lproj),
+    create_filters(L, Lfilters),
+    create_take(L, Take),
+    create_sort(L, Lproj, Sort).
+
+create_projections([], []).
+create_projections([bouche | T], [bouche | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([nez | T], [nez | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([noeud_vin(L) | T], [nom | AllProjections]) :- 
+    create_projections(L, Projections), 
+    create_projections(T, RestProjections),
+    append(Projections, RestProjections, AllProjections).
+create_projections([noeud_prix(_, _) | T], [prix | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([noeud_annee(_, _) | T], [annee | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([_ | T], Projections) :- 
+    create_projections(T, Projections).
+
+create_filters([], []).
+create_filters([noeud_vin(L) | T], AllFilters) :- 
+    create_filters(L, Filters), 
+    create_filters(T, RestFilters),
+    append(Filters, RestFilters, AllFilters).
+create_filters([noeud_nom_vin(Nom) | T], [[nom, eq, Nom] | RestFilters]) :-
+    create_filters(T, RestFilters).
+create_filters([noeud_couleur(Couleur) | T], [[couleur, eq, Couleur] | RestFilters]) :-
+    create_filters(T, RestFilters).
+create_filters([noeud_appelation(Appelation) | T], [[appelation, eq, Appelation] | RestFilters]) :-
+    create_filters(T, RestFilters).
+create_filters([noeud_localite(Localite) | T], [[localite, eq, Localite] | RestFilters]) :-
+    create_filters(T, RestFilters).
+create_filters([noeud_annee(Op, Annee) | T], [[annee, Op, Annee] | Restfilters]) :-
+    create_filters(T, Restfilters).
+create_filters([noeud_prix(Op, Prix) | T], [[prix, Op, Prix] | Restfilters]) :-
+    create_filters(T, Restfilters).
+create_filters([X | T], Filters) :- create_filters(T, Filters).
+
+create_take(L, 1) :- member(bouche, L).
+create_take(L, 1) :- member(nez, L).
+create_take(_, 3).
+create_sort(L, _, asc(bouche)) :- member(bouche, L).
+create_sort(L, _, asc(nez)) :- member(nez, L).
+create_sort(_, Lproj, asc(nom)) :- member(nom, Lproj).
 
 % Execute Query
 execute_query(query(Lproj, Lfilters, Skip, Take, Sort), Lvin) :-
@@ -129,6 +174,21 @@ apply_sort(desc(Col), Projections, Lin, Lout) :-
     columnSort(Lin, descending, SortIndex, Lout).
 
 apply_filters([], Id) :- nom(Id, _).
+
+apply_filters([[nom, eq, L] | Rest], Id) 
+    :- nom(Id, X),
+    atomic_list_concat(X, '_', Y),
+    downcase_atom(Y, L),
+    apply_filters(Rest, Id).
+
+apply_filters([[localite, eq, L] | Rest], Id) 
+    :- localite(Id, _, L),
+    apply_filters(Rest, Id).
+
+apply_filters([[localite, eq, L] | Rest], Id) 
+    :- localite(Id, L, _),
+    apply_filters(Rest, Id).
+
 apply_filters([[couleur, eq ,C] | Rest], Id)
     :- couleur(Id, C),
     apply_filters(Rest, Id).
@@ -196,6 +256,12 @@ get_projections(Id, [Projection | Rest], [CurrentValue | OtherValues]) :-
 get_projection(Id, nom, Value) :-
     nom(Id, NomList),
     atomic_list_concat(NomList, ' ', Value).
+get_projection(Id, bouche, Value) :-
+    bouche(Id, BoucheList),
+    atomic_list_concat(BoucheList, ' ', Value).
+get_projection(Id, nez, Value) :-
+    nez(Id, NezList),
+    atomic_list_concat(NezList, ' ', Value).
 get_projection(Id, annee, Value) :-
     annee(Id, Annee),
     atom_number(Value, Annee).
@@ -211,3 +277,8 @@ get_projection(Id, appelation, Value) :-
 
 %TEST
 test_query(L) :- execute_query(query([couleur, nom, annee, prix], [[annee, gt, 2014], [couleur, eq, rouge]], 0, 5, asc(annee)), L).
+
+test_create_query(Sentence, Result) :- 
+    phrase(parse_question(Question), Sentence),
+    create_query(Question, Query),
+    execute_query(Query, Result).
