@@ -285,7 +285,7 @@ get_projection(Id, appelation, Value) :-
 %TEST
 test_query(L) :- execute_query(query([couleur, nom, annee, prix], [[annee, gt, 2014], [couleur, eq, rouge]], 0, 5, asc(annee)), L).
 
-test_create_query(Sentence, Result) :- 
+test_query(Sentence, Result) :- 
     phrase(parse_question(Question), Sentence),
     create_query(Question, Query),
     execute_query(Query, Result).
