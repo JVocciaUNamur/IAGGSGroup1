@@ -22,27 +22,18 @@ produire_reponse_heuristique([fin], [L1]) :-
 produire_reponse(Question, Reponse) :-
     % todo ajouter correction: remplacer tout les mots par minuscules et remplacer les noms de vins
     % de sorte a ce qu'ils soient formattés comme ça: chateau_mallet_bidule, voir query known_nom_vin().
-
-    % TODO ajouter parsing de query
-    % TODO passer query a regle
-
-    % Extraction des mots-clés
-    trouver_mots_cles(Question, MotsCles),
-    write('Mots clés trouvés : '), writeln(MotsCles), % Debug
-
-    % Recherche des réponses possibles
-    trouver_toutes_reponses(MotsCles, Question, ListeReponses),
-    write('Réponses trouvées : '), writeln(ListeReponses), % Debug
+    
+    phrase(parse_question(ParsedQuestion), Question),
+    create_query(ParsedQuestion, Query),
+    execute_query(Query, Resultat),
+    regle_rep(_, ParsedQuestion, Resultat, ListeReponses),
 
     % Filtrer les réponses non pertinentes
     include(non_vide, ListeReponses, FiltreReponses),
     write('Réponses filtrées : '), writeln(FiltreReponses), % Debug
 
-    % Choisir la meilleure réponse ou donner un message d'erreur
-    (   FiltreReponses = []
-    ->  Reponse = ['Je suis désolé, je ne trouve pas de réponse.']
-    ;   choisir_meilleure_reponse(FiltreReponses, Reponse)
-    ).
+    FiltreReponses = [Reponse | _].
+   
 
 % Vérifie si une réponse est valide
 non_vide(L) :- L \= [].
