@@ -216,7 +216,6 @@ create_filters([noeud_prix(Op, Prix) | T], [[prix, Op, Prix] | Restfilters]) :-
 create_filters([noeud_prix(in, Pmin, Pmax) | T], [[prix, gte, Pmin], [prix, lte, Pmax] | Restfilters]) :-
     create_filters(T, Restfilters).
 create_filters([_ | T], Filters) :- create_filters(T, Filters).
-
 create_take(L, 1) :- member(noeud_critere(_), L).
 create_take(_, 3).
 
@@ -317,7 +316,7 @@ apply_filters([[accord, eq, X] | Rest], Id) :-
     accord(Id, X),
     apply_filters(Rest, Id).
 
-apply_filters([[accrod, eq, X] | Rest], Id) :-
+apply_filters([[accord, eq, X] | Rest], Id) :-
     accord(Id, Y),
     accord(Y, X),
     apply_filters(Rest, Id).
