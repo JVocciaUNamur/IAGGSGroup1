@@ -18,93 +18,135 @@ execute_query(Query, LVin)
 :- [vins].
 :- [common].
 
-% parse question 
+% on suppose que la question est en minuscule, les noms des vins ont été préalablement concaténé par des _ 
+
+:- discontiguous appelation_prefix/1.
+
+% Question
+parse_question(noeud_question([Object, Context])) --> parse_object(Object), parse_context(Context), [?].
+parse_question(noeud_question([Context, Object])) --> parse_context(Context), parse_object(Object), [?].
+parse_question(noeud_question([Object, Criteria])) --> parse_object(Object), parse_criteria(Criteria), [?].
+parse_question(noeud_question([Criteria, Object])) --> parse_criteria(Criteria), parse_object(Object), [?].
+parse_question(noeud_question([Object])) --> parse_object(Object), [?].
+parse_question(noeud_question([Context])) --> parse_context(Context), [?].
+
+parse_question(Q) --> [_], parse_question(Q).
+
+parse_object(noeud_object([Vin])) --> parse_vin(Vin).
+parse_object(noeud_object([Nom])) --> parse_nom_vin(Nom).
+parse_object(O) --> [_], parse_object(O).
+
+parse_criterium(appelation) --> parse_appelation.
+parse_criterium(millesime) --> parse_millesime.
+parse_criterium(bouche) --> parse_bouche.
+parse_criterium(nez) --> parse_nez.
+parse_criterium(localite) --> parse_localite.
+parse_criterium(description) --> parse_description.
+parse_criterium(prix) --> parse_prix.
+criteria_separator([',', et]).
+parse_criteria(noeud_critere([Crit | Criteres])) --> parse_criterium(Crit), [Sep], parse_criteria(noeud_critere(Criteres)), {criteria_separator(L), member(Sep, L)}.
+parse_criteria(noeud_critere([Crit])) --> parse_criterium(Crit). 
+parse_criteria(C) --> [_], parse_criteria(C).
+
+%context
+context_prefix([pour, accompagner, avec, du, de, la]).
+mot_context(M, Ctx) :- accord(Ctx, M).
+parse_context(C) --> [P], parse_context(C), {context_prefix(L), member(P, L)}.
+parse_context(noeud_context(Ctx)) --> [M], {mot_context(M, Ctx)}. 
+parse_context(C) --> [_], parse_context(C).
+
+%object
+vin_prefix([le, les, du, des, un, vin, vins, pinard, pinards]).
+parse_vin(noeud_vin(Params)) --> parse_params(Params).
+parse_vin(V) --> [P], parse_vin(V), {vin_prefix(L), member(P, L)}.
+
+parse_param(P) --> parse_couleur(P).
+parse_param(P) --> parse_localite(P).
+parse_param(P) --> parse_appelation(P).
+parse_param(P) --> parse_prix(P).
+parse_param(P) --> parse_annee(P).
+parse_params([P | Params]) --> parse_param(P), parse_params(Params).
+parse_params([P]) --> parse_param(P).
+
+known_nom_vin(X) :- nom(_, L), atomic_list_concat(L, '_', Y), downcase_atom(Y, X).
+nom_vin_prefix([le, les, du, des]).
+parse_nom_vin(noeud_nom_vin(N)) --> [N], {known_nom_vin(N)}.
+parse_nom_vin(noeud_nom_vin(N, Annee)) --> parse_nom_vin(noeud_nom_vin(N)), [Annee], {number(Annee)}.
+parse_nom_vin(N) --> [P], parse_nom_vin(N), {nom_vin_prefix(L), member(P, L)}.
+
+couleur_prefix([du, un, des]).
+known_couleur([(rouge, [rouge, rouges]), (blanc, [blanc, blancs]), (rose, [rose, roses])]).
+parse_couleur(noeud_couleur(C)) --> [Couleur], {known_couleur(X), member((C, Alt), X), member(Couleur, Alt)}.
+parse_couleur(C) --> [P], parse_couleur(C), {couleur_prefix(L), member(P, L)}.
+
 known_localite(X) :- localite(_, _, Y), downcase_atom(Y, X),!.
 known_localite(X) :- localite(_, Y, _), downcase_atom(Y, X),!.
-known_appelation(X) :- appelation(_, Y), downcase_atom(Y, X),!.
-known_nom_vin(X) :- nom(_, L), atomic_list_concat(L, '_', Y), downcase_atom(Y, X).
-parse_vin(Arbre) --> [_], parse_vin(Arbre).
-parse_vin(noeud_vin([Couleur, Localite])) --> const_vin, parse_couleur(Couleur), const_de, parse_localite(Localite).
-parse_vin(noeud_vin([Localite])) --> const_vin, const_de, parse_localite(Localite).
-parse_vin(noeud_vin([Couleur])) --> const_vin, parse_couleur(Couleur).
-parse_vin(noeud_vin([])) --> const_vin.
-parse_vin(noeud_vin([Couleur, Localite])) --> const_det_couleur, parse_couleur(Couleur), const_de, parse_localite(Localite).
-parse_vin(noeud_vin([Couleur])) --> const_det_couleur, parse_couleur(Couleur).
-parse_vin(noeud_vin([Appelation])) --> const_det_appelation, parse_appelation(Appelation).
-parse_vin(noeud_vin([Appelation, Localite])) --> const_det_appelation, parse_appelation(Appelation), const_de, parse_localite(Localite).
-parse_vin(noeud_vin([Appelation, Couleur])) --> const_det_appelation, parse_appelation(Appelation), parse_couleur(Couleur).
-parse_vin(noeud_vin([Localite, Couleur])) --> const_vin, const_de, parse_localite(Localite), parse_couleur(Couleur).
-parse_question(Question) --> [_], parse_question(Question).
-parse_question(noeud_question([Vin])) --> const_mot_instruction, parse_vin(Vin). 
-parse_question(noeud_question([Vin, Prix])) --> const_mot_instruction, parse_vin(Vin), parse_prix(Prix). 
-parse_question(noeud_question([Vin, Prix])) --> const_mot_instruction, parse_vin(Vin), parse_annee(Prix). 
-parse_question(noeud_question([bouche, Nom])) --> const_mot_question, const_verbe_question, const_det_nom_vin, parse_nom_vin(Nom), const_bouche.
-parse_question(noeud_question([bouche, Nom])) --> const_mot_question, const_verbe_question, const_bouche, const_det_nom_vin, parse_nom_vin(Nom).
-parse_question(noeud_question([nez, Nom])) --> const_mot_question, const_verbe_question, const_det_nom_vin, parse_nom_vin(Nom), const_nez.
-parse_question(noeud_question([nez, Nom])) --> const_mot_question, const_verbe_question, const_nez, const_det_nom_vin, parse_nom_vin(Nom).
-parse_couleur(noeud_couleur(rouge)) --> [rouge].
-parse_couleur(noeud_couleur(rouge)) --> [rouges].
-parse_couleur(noeud_couleur(blanc)) --> [blanc].
-parse_couleur(noeud_couleur(blanc)) --> [blancs].
-parse_couleur(noeud_couleur(rose)) --> [rose].
-parse_couleur(noeud_couleur(rose)) --> [roses].
+localite_prefix([de]).
 parse_localite(noeud_localite(L)) --> [L], {known_localite(L)}. 
-parse_appelation(noeud_appelation(A)) --> [A], {known_appelation(A)}. 
-parse_annee(noeud_annee(eq, Annee)) --> const_de, [Annee], {number(Annee)}.
-parse_annee(noeud_annee(eq, Annee)) --> const_millesime, [Annee], {number(Annee)}.
-parse_annee(noeud_annee(lte, Annee)) --> const_plus_vieux, [Annee], {number(Annee)}.
-parse_annee(noeud_annee(gte, Annee)) --> const_plus_recent, [Annee], {number(Annee)}.
-parse_prix(noeud_prix(eq, Prix)) --> [Prix], const_euro(), {number(Prix)}.
-parse_prix(noeud_prix(eq, Prix)) --> [a], [Prix], const_euro(), {number(Prix)}.
-parse_prix(noeud_prix(lte, Prix)) --> const_moins_cher, [Prix], const_euro(), {number(Prix)}. 
-parse_prix(noeud_prix(gte, Prix)) --> const_plus_cher, [Prix], const_euro(), {number(Prix)}. 
-parse_nom_vin(noeud_nom_vin(Nom)) --> [Nom], {known_nom_vin(Nom)}. 
-const_vin() --> [vin].
-const_vin() --> [vins].
-const_de() --> [de].
-const_du() --> [du].
-const_des() --> [des].
-const_le() --> [le].
-const_det_couleur --> [du].
-const_det_couleur --> [des].
-const_det_couleur --> [un].
-const_det_appelation() --> [un].
-const_det_appelation() --> [du].
-const_det_nom_vin() --> [le].
-const_det_nom_vin() --> [du].
-const_euro() --> [eur].
-const_euro() --> [euro].
-const_plus_vieux() --> [plus], [vieux], [que].
-const_plus_vieux() --> [moins], [recent], [que].
-const_plus_recent() --> [plus], [recent], [que].
-const_plus_recent() --> [moins], [vieux], [que].
-const_millesime() --> [millesime].
-const_plus_cher() --> [prix], [superieur], [a].
-const_plus_cher() --> [plus], [cher], [que].
-const_plus_cher() --> [a], [plus], [de].
-const_moins_cher() --> [prix], [inferieur], [a].
-const_moins_cher() --> [moins], [cher], [que].
-const_moins_cher() --> [a], [moins], [de].
-const_mot_instruction() --> [lister].
-const_mot_instruction() --> [liste].
-const_mot_instruction() --> [chercher].
-const_mot_instruction() --> [cherche].
-const_mot_instruction() --> [voudrait].
-const_mot_instruction() --> [veux].
-const_mot_instruction() --> [trouver].
-const_mot_instruction() --> [trouve].
-const_bouche() --> [bouche].
-const_bouche() --> [la], [bouche].
-const_bouche() --> [en], [bouche].
-const_nez() --> [nez].
-const_nez() --> [au], [nez].
-const_nez() --> [le], [nez].
-const_mot_question() --> [que].
-const_mot_question() --> [quel].
-const_mot_question() --> [quelle].
-const_verbe_question() --> [donne].
-const_verbe_question() --> [vaut].
-% Parsing : ?- phrase(parse_vin(Arbre), [je, cherche, un, vin de, 'Bordeaux'], []).
+parse_localite(L) --> [P], parse_localite(L), {localite_prefix(Loc), member(P, Loc)}. 
+
+known_appelation(X) :- appelation(_, Y), downcase_atom(Y, X),!.
+appelation_prefix([un, du, des]).
+parse_appelation(noeud_appelation(A)) --> [A], {known_appelation(A)}.
+parse_appelation(A) --> [P], parse_appelation(A), {appelation_prefix(L), member(P, L)}.
+
+prix_prefix([au, le, au, prix, cout, qui, coute, vaut, est, a, un]).
+parse_prix(P) --> parse_prix_egal(P).
+parse_prix(P) --> parse_prix_inf(P). 
+parse_prix(P) --> parse_prix_sup(P). 
+parse_prix(P) --> parse_prix_entre(P). 
+parse_prix(P) --> [Pref], parse_prix(P), {prix_prefix(L), member(Pref, L)}.
+
+euro([eur, euro]).
+prix_num(P) --> [P], [E], {euro(Le), member(E, Le), number(P)}.
+prix_egal_prefix([egal, a]).
+parse_prix_egal(noeud_prix(eq, P)) --> prix_num(P). 
+parse_prix_egal(P) --> [Pref], parse_prix_egal(P), {prix_egal_prefix(L), member(Pref, L)}.
+prix_sup_prefix([plus, cher, que, superieur, a, au, dessus, de]).
+parse_prix_sup(noeud_prix(gte, P)) --> prix_num(P). 
+parse_prix_sup(P) --> [Pref], parse_prix_sup(P), {prix_sup_prefix(L), member(Pref, L)}.
+prix_inf_prefix([moins, cher, que, inferieur, a, en, dessous, de]).
+parse_prix_inf(noeud_prix(lte, P)) --> prix_num(P). 
+parse_prix_inf(P) --> [Pref], parse_prix_inf(P), {prix_inf_prefix(L), member(Pref, L)}. 
+prix_entre_prefix([entre]).
+prix_entre_separator([et]).
+parse_prix_entre(noeud_prix(in, [Pmin, Pmax])) --> [Pref], prix_num(Pmin) , [Sep], prix_num(Pmax), {prix_entre_prefix(LPref), member(Pref, LPref), prix_entre_separator(LSep), member(Sep, LSep)}.
+
+prefix_annee([de, millesime, annee]).
+parse_annee(noeud_annee(eq, Annee)) --> [Annee], {number(Annee), Annee >= 1000, Annee =< 9999}.
+parse_annee(A) --> [P], parse_annee(A), {prefix_annee(L), member(P, L)}.
+
+%criteria
+appelation_criteria_prefix([la, les, 'l\'']).
+mot_appelation([appelation, appelations]).
+parse_appelation() --> [M], {mot_appelation(L), member(M, L)}.
+parse_appelation() --> [P], parse_appelation, {appelation_criteria_prefix(L), member(P, L)}.
+
+millesime_prefix([la, le, les]).
+mot_millesime([millesime, millesimes, annee, annees]).
+parse_millesime() --> [M], {mot_millesime(L), member(M, L)}.
+parse_millesime() --> [P], parse_millesime, {millesime_prefix(L), member(P, L)}.
+
+bouche_prefix([sa, la, en]).
+parse_bouche() --> [bouche].
+parse_bouche() --> [P], parse_bouche, {bouche_prefix(L), member(P, L)}.
+
+nez_prefix([son, le, au]).
+parse_nez() --> [nez].
+parse_nez() --> [P], parse_nez, {nez_prefix(L), member(P, L)}.
+
+parse_localite() --> [localite].
+parse_localite() --> [la], parse_localite.
+
+prefix_description([la, les, me, en]).
+mot_description([dire, decrire, description, descriptions]).
+parse_description() --> [M], {mot_description(L), member(M, L)}.
+parse_description() --> [P], parse_description, {prefix_description(L), member(P, L)}.
+
+prefix_prix([le, les, combien]).
+mot_prix([prix, coute, vaut]).
+parse_prix() --> [M], {mot_prix(L), member(M, L)}.
+parse_prix() --> [P], parse_prix, {prefix_prix(L), member(P, L)}.
 
 % create query from question
 create_query(noeud_question(L), query(Lproj, Lfilters, 0, Take, Sort)) :- 
@@ -114,15 +156,39 @@ create_query(noeud_question(L), query(Lproj, Lfilters, 0, Take, Sort)) :-
     create_sort(L, Lproj, Sort).
 
 create_projections([], []).
+create_projections([noeud_critere(Lcritere) | T], LProj) :-
+    create_projections(Lcritere, R),
+    create_projections(T, L),
+    append(L, R, LProj).
+create_projections([noeud_object(Lo) | T], LProj) :-
+    create_projections(Lo, R),
+    create_projections(T, L),
+    append(L, R, LProj).
+create_projections([noeud_context(Lc) | T], LProj) :-
+    create_projections(Lc, R),
+    create_projections(T, L),
+    append(L, R, LProj).
+
 create_projections([bouche | T], [bouche | Projections]) :- 
     create_projections(T, Projections).
 create_projections([nez | T], [nez | Projections]) :- 
     create_projections(T, Projections).
+create_projections([prix | T], [prix | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([millesime | T], [annee | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([appelation | T], [appelation | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([description | T], [description | Projections]) :- 
+    create_projections(T, Projections).
+
 create_projections([noeud_vin(L) | T], [nom | AllProjections]) :- 
     create_projections(L, Projections), 
     create_projections(T, RestProjections),
     append(Projections, RestProjections, AllProjections).
 create_projections([noeud_prix(_, _) | T], [prix | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([noeud_prix(_, _, _) | T], [prix | Projections]) :- 
     create_projections(T, Projections).
 create_projections([noeud_annee(_, _) | T], [annee | Projections]) :- 
     create_projections(T, Projections).
@@ -130,11 +196,25 @@ create_projections([_ | T], Projections) :-
     create_projections(T, Projections).
 
 create_filters([], []).
+create_filters([noeud_critere(Lcritere) | T], Lfilters) :-
+    create_filters(Lcritere, R),
+    create_filters(T, L),
+    append(L, R, Lfilters).
+create_filters([noeud_object(Lo) | T], Lfilters) :-
+    create_filters(Lo, R),
+    create_filters(T, L),
+    append(L, R, Lfilters).
+create_filters([noeud_context(Lc) | T], Lfilters) :-
+    create_filters(Lc, R),
+    create_filters(T, L),
+    append(L, R, Lfilters).
 create_filters([noeud_vin(L) | T], AllFilters) :- 
     create_filters(L, Filters), 
     create_filters(T, RestFilters),
     append(Filters, RestFilters, AllFilters).
 create_filters([noeud_nom_vin(Nom) | T], [[nom, eq, Nom] | RestFilters]) :-
+    create_filters(T, RestFilters).
+create_filters([noeud_nom_vin(Nom, Annee) | T], [[nom, eq, Nom], [annee, eq, Annee] | RestFilters]) :-
     create_filters(T, RestFilters).
 create_filters([noeud_couleur(Couleur) | T], [[couleur, eq, Couleur] | RestFilters]) :-
     create_filters(T, RestFilters).
@@ -146,13 +226,13 @@ create_filters([noeud_annee(Op, Annee) | T], [[annee, Op, Annee] | Restfilters])
     create_filters(T, Restfilters).
 create_filters([noeud_prix(Op, Prix) | T], [[prix, Op, Prix] | Restfilters]) :-
     create_filters(T, Restfilters).
+create_filters([noeud_prix(in, Pmin, Pmax) | T], [[prix, gte, Pmin], [prix, lte, Pmax] | Restfilters]) :-
+    create_filters(T, Restfilters).
 create_filters([_ | T], Filters) :- create_filters(T, Filters).
 
-create_take(L, 1) :- member(bouche, L).
-create_take(L, 1) :- member(nez, L).
+create_take(L, 1) :- member(noeud_critere(_), L).
 create_take(_, 3).
-create_sort(L, _, asc(bouche)) :- member(bouche, L).
-create_sort(L, _, asc(nez)) :- member(nez, L).
+create_sort(L, _, asc(Crit)) :- member(noeud_critere([Crit | _]), L).
 create_sort(_, Lproj, asc(nom)) :- member(nom, Lproj).
 
 % Execute Query
