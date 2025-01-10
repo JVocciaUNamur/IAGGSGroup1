@@ -23,12 +23,12 @@ execute_query(Query, LVin)
 :- discontiguous appelation_prefix/1.
 
 % Question
-parse_question(noeud_question([Object, Context])) --> parse_object(Object), parse_context(Context), [?].
-parse_question(noeud_question([Context, Object])) --> parse_context(Context), parse_object(Object), [?].
-parse_question(noeud_question([Object, Criteria])) --> parse_object(Object), parse_criteria(Criteria), [?].
-parse_question(noeud_question([Criteria, Object])) --> parse_criteria(Criteria), parse_object(Object), [?].
-parse_question(noeud_question([Object])) --> parse_object(Object), [?].
-parse_question(noeud_question([Context])) --> parse_context(Context), [?].
+parse_question(noeud_question([Object, Context])) --> parse_object(Object), parse_context(Context).
+parse_question(noeud_question([Context, Object])) --> parse_context(Context), parse_object(Object).
+parse_question(noeud_question([Object, Criteria])) --> parse_object(Object), parse_criteria(Criteria).
+parse_question(noeud_question([Criteria, Object])) --> parse_criteria(Criteria), parse_object(Object).
+parse_question(noeud_question([Object])) --> parse_object(Object).
+parse_question(noeud_question([Context])) --> parse_context(Context).
 
 parse_question(Q) --> [_], parse_question(Q).
 
@@ -149,13 +149,14 @@ parse_prix() --> [M], {mot_prix(L), member(M, L)}.
 parse_prix() --> [P], parse_prix, {prefix_prix(L), member(P, L)}.
 
 % create query from question
-create_query(noeud_question(L), query(Lproj, Lfilters, 0, Take, Sort)) :- 
+create_query(noeud_question(L), query(UniqueProj, UniqueFilters, 0, Take, asc(nom))) :- 
     create_projections(L, Lproj),
+    list_to_set(Lproj, UniqueProj),
     create_filters(L, Lfilters),
-    create_take(L, Take),
-    create_sort(L, Lproj, Sort).
+    list_to_set(Lfilters, UniqueFilters),
+    create_take(L, Take).
 
-create_projections([], []).
+create_projections([], [nom]).
 create_projections([noeud_critere([Crit | Lcritere]) | T], [Crit | LProj]) :-
     create_projections(Lcritere, R),
     create_projections(T, L),
@@ -166,7 +167,7 @@ create_projections([noeud_object(Lo) | T], LProj) :-
     append(L, R, LProj).
 create_projections([noeud_context(_) | T], [accord | LProj]) :- 
     create_projections(T, LProj).
-create_projections([noeud_vin(L) | T], [nom | AllProjections]) :- 
+create_projections([noeud_vin(L) | T], AllProjections) :- 
     create_projections(L, Projections), 
     create_projections(T, RestProjections),
     append(Projections, RestProjections, AllProjections).
@@ -180,9 +181,9 @@ create_projections([noeud_localite(_) | T], [localite | Projections]) :-
     create_projections(T, Projections).
 create_projections([noeud_appelation(_) | T], [appelation | Projections]) :- 
     create_projections(T, Projections).
-create_projections([noeud_nom_vin(_) | T], [nom | Projections]) :-
+create_projections([noeud_couleur(_) | T], [couleur | Projections]) :-
     create_projections(T, Projections).
-create_projections([noeud_nom_vin(_,_) | T], [nom, annee | Projections]) :-
+create_projections([noeud_nom_vin(_,_) | T], [annee | Projections]) :-
     create_projections(T, Projections).
 create_projections([_ | T], Projections) :- 
     create_projections(T, Projections).
@@ -218,8 +219,6 @@ create_filters([_ | T], Filters) :- create_filters(T, Filters).
 
 create_take(L, 1) :- member(noeud_critere(_), L).
 create_take(_, 3).
-create_sort(L, _, asc(Crit)) :- member(noeud_critere([Crit | _]), L).
-create_sort(_, Lproj, asc(nom)) :- member(nom, Lproj).
 
 % Execute Query
 execute_query(query(Lproj, Lfilters, Skip, Take, Sort), Lvin) :-
@@ -369,7 +368,7 @@ get_projection(Id, accord, Value) :- accord(Id, Value).
 test_query(L) :- execute_query(query([couleur, nom, annee, prix], [[annee, gt, 2014], [couleur, eq, rouge]], 0, 5, asc(annee)), L).
 
 test_query(Sentence, Result) :- 
-    phrase(parse_question(Question), Sentence),
+    phrase(parse_question(Question), Sentence, _),
     writeln(Question),
     create_query(Question, Query),
     writeln(Query),
