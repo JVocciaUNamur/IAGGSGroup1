@@ -10,17 +10,6 @@
 :- discontiguous nez/2.
 :- discontiguous localite/3.
 
-accord(viandes, 'mouton').
-accord(viandes, 'boeuf').
-accord(viandes, 'veau').
-accord(viandes, 'porc').
-accord(viandes, 'steak').
-accord(viandes, 'viande').
-
-accord(poissons, 'cabilleau').
-accord(poissons, 'sole').
-accord(poissons, 'poisson').
-
 nom(1, ['Chateau', 'Moulin', 'de', 'Mallet']).
 annee(1, 2014).
 appelation(1, 'Bordeaux').
@@ -260,3 +249,77 @@ bouche(20, ['une', 'texture', 'legere', 'et', 'des', 'aromes', 'frais', 'et', 'f
 robe(20, ['Rose', 'clair']).
 accord(20, aperitifs).
 description(20, [['Un', 'rose', 'leger', 'et', 'frais', 'ideal', 'pour', 'les', 'journees', 'ensoleillees'], ['Parfait', 'pour', 'les', 'aperitifs']]).
+
+accord(aperitifs, 'chips').
+accord(aperitifs, 'cacahuetes').
+accord(aperitifs, 'olives').
+accord(aperitifs, 'bretzels').
+accord(aperitifs, 'feuilletes').
+accord(aperitifs, 'gougères').
+accord(aperitifs, 'aperitif').
+accord(aperitifs, 'aperitifs').
+
+accord(viandes, 'mouton').
+accord(viandes, 'boeuf').
+accord(viandes, 'veau').
+accord(viandes, 'porc').
+accord(viandes, 'steak').
+accord(viandes, 'poulet').
+accord(viandes, 'dinde').
+accord(viandes, 'agneau').
+accord(viandes, 'viande').
+accord(viandes, 'viandes').
+
+accord(poissons, 'cabillaud').
+accord(poissons, 'sole').
+accord(poissons, 'saumon').
+accord(poissons, 'thon').
+accord(poissons, 'truite').
+accord(poissons, 'bar').
+accord(poissons, 'dorade').
+accord(poissons, 'poisson').
+accord(poissons, 'poissons').
+
+accord(plats_en_sauce, 'boeuf bourguignon').
+accord(plats_en_sauce, 'blanquette de veau').
+accord(plats_en_sauce, 'coq au vin').
+accord(plats_en_sauce, 'curry').
+accord(plats_en_sauce, 'ragout').
+accord(plats_en_sauce, 'tajine').
+accord(plats_en_sauce, 'plats en sauce').
+accord(plats_en_sauce, 'plat en sauce').
+
+accord(charcuterie, 'jambon').
+accord(charcuterie, 'saucisson').
+accord(charcuterie, 'pate').
+accord(charcuterie, 'terrine').
+accord(charcuterie, 'rillettes').
+accord(charcuterie, 'boudin').
+accord(charcuterie, 'charcuterie').
+accord(charcuterie, 'charcuteries').
+
+accord(fruits_de_mer, 'fruits de mer').
+accord(fruits_de_mer, 'fruit de mer').
+accord(fruits_de_mer, 'crevettes').
+accord(fruits_de_mer, 'moules').
+accord(fruits_de_mer, 'huitres').
+accord(fruits_de_mer, 'palourdes').
+accord(fruits_de_mer, 'coquilles Saint Jacques').
+
+accord(fromages, 'camembert').
+accord(fromages, 'brie').
+accord(fromages, 'roquefort').
+accord(fromages, 'chevre').
+accord(fromages, 'comte').
+accord(fromages, 'emmental').
+accord(fromages, 'fromage').
+accord(fromages, 'fromages').
+
+accord(grillades, 'brochettes').
+accord(grillades, 'cotes de porc').
+accord(grillades, 'merguez').
+accord(grillades, 'steak grille').
+accord(grillades, 'travers de porc').
+accord(grillades, 'saucisse').
+accord(grillades, 'grillades').
+accord(grillades, 'grillade').

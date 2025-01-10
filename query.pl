@@ -37,7 +37,7 @@ parse_object(noeud_object([Nom])) --> parse_nom_vin(Nom).
 parse_object(O) --> [_], parse_object(O).
 
 parse_criterium(appelation) --> parse_appelation.
-parse_criterium(millesime) --> parse_millesime.
+parse_criterium(annee) --> parse_millesime.
 parse_criterium(bouche) --> parse_bouche.
 parse_criterium(nez) --> parse_nez.
 parse_criterium(localite) --> parse_localite.
@@ -50,9 +50,9 @@ parse_criteria(C) --> [_], parse_criteria(C).
 
 %context
 context_prefix([pour, accompagner, avec, du, de, la]).
-mot_context(M, Ctx) :- accord(Ctx, M).
+mot_context(M) :- accord(_, M).
 parse_context(C) --> [P], parse_context(C), {context_prefix(L), member(P, L)}.
-parse_context(noeud_context(Ctx)) --> [M], {mot_context(M, Ctx)}. 
+parse_context(noeud_context(M)) --> [M], {mot_context(M)}. 
 parse_context(C) --> [_], parse_context(C).
 
 %object
@@ -156,7 +156,7 @@ create_query(noeud_question(L), query(Lproj, Lfilters, 0, Take, Sort)) :-
     create_sort(L, Lproj, Sort).
 
 create_projections([], []).
-create_projections([noeud_critere(Lcritere) | T], LProj) :-
+create_projections([noeud_critere([Crit | Lcritere]) | T], [Crit | LProj]) :-
     create_projections(Lcritere, R),
     create_projections(T, L),
     append(L, R, LProj).
@@ -164,24 +164,8 @@ create_projections([noeud_object(Lo) | T], LProj) :-
     create_projections(Lo, R),
     create_projections(T, L),
     append(L, R, LProj).
-create_projections([noeud_context(Lc) | T], LProj) :-
-    create_projections(Lc, R),
-    create_projections(T, L),
-    append(L, R, LProj).
-
-create_projections([bouche | T], [bouche | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([nez | T], [nez | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([prix | T], [prix | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([millesime | T], [annee | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([appelation | T], [appelation | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([description | T], [description | Projections]) :- 
-    create_projections(T, Projections).
-
+create_projections([noeud_context(_) | T], [accord | LProj]) :- 
+    create_projections(T, LProj).
 create_projections([noeud_vin(L) | T], [nom | AllProjections]) :- 
     create_projections(L, Projections), 
     create_projections(T, RestProjections),
@@ -192,22 +176,24 @@ create_projections([noeud_prix(_, _, _) | T], [prix | Projections]) :-
     create_projections(T, Projections).
 create_projections([noeud_annee(_, _) | T], [annee | Projections]) :- 
     create_projections(T, Projections).
+create_projections([noeud_localite(_) | T], [localite | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([noeud_appelation(_) | T], [appelation | Projections]) :- 
+    create_projections(T, Projections).
+create_projections([noeud_nom_vin(_) | T], [nom | Projections]) :-
+    create_projections(T, Projections).
+create_projections([noeud_nom_vin(_,_) | T], [nom, annee | Projections]) :-
+    create_projections(T, Projections).
 create_projections([_ | T], Projections) :- 
     create_projections(T, Projections).
 
 create_filters([], []).
-create_filters([noeud_critere(Lcritere) | T], Lfilters) :-
-    create_filters(Lcritere, R),
-    create_filters(T, L),
-    append(L, R, Lfilters).
 create_filters([noeud_object(Lo) | T], Lfilters) :-
     create_filters(Lo, R),
     create_filters(T, L),
     append(L, R, Lfilters).
-create_filters([noeud_context(Lc) | T], Lfilters) :-
-    create_filters(Lc, R),
-    create_filters(T, L),
-    append(L, R, Lfilters).
+create_filters([noeud_context(Ctx) | T], [[accord, eq, Ctx] | Lfilters]) :-
+    create_filters(T, Lfilters).
 create_filters([noeud_vin(L) | T], AllFilters) :- 
     create_filters(L, Filters), 
     create_filters(T, RestFilters),
@@ -328,6 +314,15 @@ apply_filters([[prix, gt, P] | Rest], Id)
     X > P,
     apply_filters(Rest, Id).
 
+apply_filters([[accord, eq, X] | Rest], Id) :- 
+    accord(Id, X),
+    apply_filters(Rest, Id).
+
+apply_filters([[accrod, eq, X] | Rest], Id) :-
+    accord(Id, Y),
+    accord(Y, X),
+    apply_filters(Rest, Id).
+
 apply_projections([], _, []).
 apply_projections([Id | Rest], Projections, [Value | RestResult]) :-
     apply_projections(Id, Projections, Value),
@@ -361,11 +356,21 @@ get_projection(Id, couleur, Value) :-
 get_projection(Id, appelation, Value) :-
     appelation(Id, Appellation),
     Value = Appellation.
-
+get_projection(Id, localite, Value) :- 
+    localite(Id, Loc1, Loc2),
+    atomic_list_concat([Loc1, Loc2], ', ', Value).
+get_projection(Id, description, Value) :-
+    description(Id, Desc),
+    flatten(Desc, FDesc),
+    atomic_list_concat(FDesc, '.', Value).
+get_projection(Id, accord, Value) :- accord(Id, Value).
+    
 %TEST
 test_query(L) :- execute_query(query([couleur, nom, annee, prix], [[annee, gt, 2014], [couleur, eq, rouge]], 0, 5, asc(annee)), L).
 
 test_query(Sentence, Result) :- 
     phrase(parse_question(Question), Sentence),
+    writeln(Question),
     create_query(Question, Query),
+    writeln(Query),
     execute_query(Query, Result).
