@@ -12,28 +12,41 @@
 % Règle générique pour formater les résultats obtenus depuis query.pl
 regle_rep(_, ArbreSyntaxique, Resultats, Reponse) :-
     valide_arbre(ArbreSyntaxique),
-    format_reponse(Resultats, Reponse).
+	write('ArbreSyntaxique : '), writeln(ArbreSyntaxique), % Debug
+    format_reponse(ArbreSyntaxique, Resultats, Reponse),
+	write('Resultats /:'), writeln(Resultats), % Debug
+	write('Reponse /:'), writeln(Reponse). 
 
-% Validation de l'arbre syntaxique (à voir si necessaire)
+% Validation de l'arbre syntaxique
 valide_arbre(noeud_question(_)).
-valide_arbre(noeud_vin(_)).
 
-% Format réponses
-format_reponse([], [['Je suis desole, aucun resultat trouve.']]). % Cas vide
+% Format réponses selon le type de question et le nombre de résultats
+format_reponse(_, [], [['Je suis desole, aucun vin ne correspond a vos criteres.']]).
 
-format_reponse(Resultats, [['Voici les resultats trouves :'] | Lignes]) :-
-    maplist(format_ligne, Resultats, Lignes).
+% Format pour une question avec plusieurs résultats
+format_reponse(_, Resultats, [['Voici', NVins, 'vins qui correspondent a vos criteres', ':', ListeVins]]) :-
+    length(Resultats, N),
+    N > 1,
+    number_chars(N, NChars),
+    atom_chars(NVins, NChars),
+    maplist(format_result_line, Resultats, LignesFormatees),
+    atomic_list_concat(LignesFormatees, ', ', ListeVins).
 
-% Formatage générique d'une ligne de résultats
-format_ligne(Ligne, Texte) :-
-    atomic_list_concat(Ligne, ' ', Texte).
+% Format pour un seul résultat (hors nez - bouche)
+format_reponse(_, [Resultat], [['Voici le vin trouve :', ListeVins]]) :-
+    maplist(format_result_line, [Resultat], LignesFormatees),
+    atomic_list_concat(LignesFormatees, ', ', ListeVins).
 
-% Exemple test 
-test_regle :-
-    % Exemple de résultats récupérés depuis query.pl
-    Resultats = [['Chateau Moulin de Mallet', 'rouge', 'Bordeaux'], ['Chateau Marguerite', 'rouge', 'Medoc']],
-    regle_rep(_, noeud_question([vin, rouge, bordeaux]), Resultats, Reponse),
-    writeln(Reponse).
+% Format pour une question sur le nez ou la bouche d'un vin spécifique
+format_reponse(noeud_question([TypeInfo, Nom]), Resultats, Reponse) :-
+    (TypeInfo = nez ; TypeInfo = bouche),
+    !,  % Important : coupe pour empêcher le backtracking vers les autres règles
+    memberchk([Description], Resultats),  % Prend la première description trouvée
+    Reponse = [[TypeInfo, 'du', Nom, ':', Description]].
 
-% Exemple de règle par défaut
+% Formate chaque ligne de résultat en une chaîne lisible
+format_result_line(Resultat, Ligne) :-
+    atomic_list_concat(Resultat, ' - ', Ligne).
+
+% Règle par défaut si aucune autre ne correspond
 regle_rep(_, _, _, [['Je suis desole, je ne comprends pas votre question.']]).
