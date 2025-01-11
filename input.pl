@@ -47,12 +47,14 @@ heuristique('en_stock', 'disponible').
 % Nettoie les mots inutiles
 nettoyer_mots([], []).
 nettoyer_mots([Mot|Reste], [MotNettoye|ResteNettoyes]) :-
-    atom_string(Mot, MotStr),
-    string_lower(MotStr, MotMinuscule),
-    string_codes(MotMinuscule, Codes),
+    downcase_atom(Mot, MotMinuscule),
+    atom_codes(MotMinuscule, Codes),
     include(code_utilisable, Codes, CodesUtilisables),
-    string_codes(MotNettoye, CodesUtilisables),
+    atom_codes(MotNettoye, CodesUtilisables),
+    atom_length(MotNettoye, LM),
+    LM > 0,
     nettoyer_mots(Reste, ResteNettoyes).
+nettoyer_mots([_ | Rest], ResteNettoyes) :- nettoyer_mots(Rest, ResteNettoyes).
 
 code_utilisable(Code) :- char_type(Char, alnum), char_code(Char, Code).
 
@@ -94,3 +96,17 @@ traiter_question(Question, Reponse) :-
     trouver_mots_cles(Question, Mots_Cles_Ordonnes),
     generer_reponse(Mots_Cles_Ordonnes, Question, Reponse),
     afficher_reponse(Reponse).
+
+standardise_nom_vin([], []).
+standardise_nom_vin(Lmots, [NomCorrige | LCorrige]) :-
+    nom(_, NomVin),
+    maplist(downcase_atom, NomVin, NomVinLower),
+    next_nom_vin(Lmots, NomVinLower, LRest),!,
+    atomic_list_concat(NomVinLower, '_', NomCorrige),
+    standardise_nom_vin(LRest, LCorrige).
+standardise_nom_vin([M | LRest], [M | LCorrige]) :-
+    standardise_nom_vin(LRest, LCorrige).
+
+next_nom_vin(Rest, [], Rest).
+next_nom_vin([X | T], [X | L], R) :-
+    next_nom_vin(T, L, R).

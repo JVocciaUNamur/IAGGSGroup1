@@ -1,28 +1,34 @@
 :- debug.
-/*---------------------------------------
-Définition d'une recherche dans la base de connaissances.
 
-query(Lproj, Lfilters, Skip, Take, Sort)
-- Lproj = un ensemble non vide de valeurs a sélectionner, ex: [nom, annee, mois].
-- Lfilters = une liste de filtres, ex: [[annee, eq, 2014], [couleur, eq, rouge]].
-- Skip = Nombre >= 0, nombre d'éléments a sauter dans le résultat.
-- Take = Nombre >=0, nombre d'éléments a retourner dans le résultat.
-- Sort = asc(Proj), desc(Proj). Proj = élément de l'ensemble LProj.
-
-execute_query(Query, LVin)
-    Query = query(Lproj, Lfilters, Skip, Take, Sort),
-    LVin = liste de résultats ex: [[2014, 'chateau latour', 'loire'], [2015, 'mon bazillac', 'bordeau']].
---------------------------------------*/
-%
 
 :- [vins].
 :- [common].
 
-% on suppose que la question est en minuscule, les noms des vins ont été préalablement concaténé par des _ 
 
 :- discontiguous appelation_prefix/1.
 
-% Question
+/* 
+extrait la sémantique de la questiond de l'utilisateur et la représente sous forme
+d'un arbre
+noeud_question([Object, Context, Criteria])
+    Object = noeud_object(Lparams) | noeud_nom_vin(Nv, Annee)
+    Context = noeud_context(Context)
+    Criteria = noeud_critere(Lcriteres)
+        LParam = liste de parametres telles que
+            noeud_couleur(X), X = rouge | blanc | rose
+            noeud_appelation(X), X = une appelation connue de la KB
+            noeud_prix(Op, X), Op = lte | gte | eq, X = un nombre
+            noeud_prix(in, Pmin, Pmax)
+            noeud_annee(Op, Annee), Op = eq | lte | gte, 1000 <= Annee <= 9999
+            noeud_localite(X), X = une localité connue de la kb
+        LCritere = liste de critères telles que
+            noeud_critere(X), X = annee, bouche, couleur, localite, nez, prix, robe, accord, description
+        Nv = nom de vin en minuscule, chaque mot séparé par des _
+        Annee = un nombre
+        Context = un accord connu de la kb
+*/
+
+% on suppose que la question est en minuscule, les noms des vins ont été préalablement concaténé par des _ 
 parse_question(noeud_question([Object, Context])) --> parse_object(Object), parse_context(Context).
 parse_question(noeud_question([Context, Object])) --> parse_context(Context), parse_object(Object).
 parse_question(noeud_question([Object, Criteria])) --> parse_object(Object), parse_criteria(Criteria).
@@ -149,6 +155,21 @@ parse_prix() --> [M], {mot_prix(L), member(M, L)}.
 parse_prix() --> [P], parse_prix, {prefix_prix(L), member(P, L)}.
 
 % create query from question
+/*---------------------------------------
+Définition d'une recherche dans la base de connaissances.
+
+query(Lproj, Lfilters, Skip, Take, Sort)
+- Lproj = un ensemble non vide de valeurs a sélectionner, ex: [nom, annee, mois].
+- Lfilters = une liste de filtres, ex: [[annee, eq, 2014], [couleur, eq, rouge]].
+- Skip = Nombre >= 0, nombre d'éléments a sauter dans le résultat.
+- Take = Nombre >=0, nombre d'éléments a retourner dans le résultat.
+- Sort = asc(Proj), desc(Proj). Proj = élément de l'ensemble LProj.
+
+execute_query(Query, LVin)
+    Query = query(Lproj, Lfilters, Skip, Take, Sort),
+    LVin = liste de résultats ex: [[2014, 'chateau latour', 'loire'], [2015, 'mon bazillac', 'bordeau']].
+--------------------------------------*/
+%
 create_query(noeud_question(L), query(UniqueProj, UniqueFilters, 0, Take, asc(nom))) :- 
     create_projections(L, Lproj),
     list_to_set(Lproj, UniqueProj),

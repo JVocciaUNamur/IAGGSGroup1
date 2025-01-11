@@ -38,7 +38,7 @@ format_reponse(_, [Resultat], [['Voici le vin trouve :', ListeVins]]) :-
     atomic_list_concat(LignesFormatees, ', ', ListeVins).
 
 % Format pour une question sur le nez ou la bouche d'un vin spécifique
-format_reponse(noeud_question([TypeInfo, Nom]), Resultats, Reponse) :-
+format_reponse(noeud_question([noeud_critere(TypeInfo), noeud_nom_vin(Nom)]), Resultats, Reponse) :-
     (TypeInfo = nez ; TypeInfo = bouche),
     !,  % Important : coupe pour empêcher le backtracking vers les autres règles
     memberchk([Description], Resultats),  % Prend la première description trouvée

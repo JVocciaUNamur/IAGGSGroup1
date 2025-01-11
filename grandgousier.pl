@@ -1,4 +1,5 @@
 % grandgousier.pl
+:- set_prolog_flag(encoding, utf8).
 
 :- [vins].
 :- [query].
@@ -20,12 +21,19 @@ produire_reponse_heuristique([fin], [L1]) :-
     L1 = [merci, de, m, '\'', avoir, consulte], !.
 
 produire_reponse(Question, Reponse) :-
-    % todo ajouter correction: remplacer tout les mots par minuscules et remplacer les noms de vins
-    % de sorte a ce qu'ils soient formattés comme ça: chateau_mallet_bidule, voir query known_nom_vin().
-    
-    phrase(parse_question(ParsedQuestion), Question),
+    write('Mots d\'entrée : '), writeln(Question), % Debug
+    nettoyer_mots(Question, MotsNettoyes),
+    write('Mots nettoyes : '), writeln(MotsNettoyes), % Debug
+    harmoniser_mots(MotsNettoyes, MotsHarmonises),
+    write('Mots harmonises : '), writeln(MotsHarmonises), % Debu   
+    standardise_nom_vin(MotsHarmonises, NomVinStandardises),
+    write('Nom vin standardises: '), writeln(NomVinStandardises),!,
+    phrase(parse_question(ParsedQuestion), NomVinStandardises, _),
+    write('Parsed Question: '), writeln(ParsedQuestion),
     create_query(ParsedQuestion, Query),
+    write('Parsed query: '), writeln(Query),
     execute_query(Query, Resultat),
+    write('Results: '), writeln(Resultat),
     regle_rep(_, ParsedQuestion, Resultat, ListeReponses),
 
     % Filtrer les réponses non pertinentes
