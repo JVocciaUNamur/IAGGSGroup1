@@ -178,10 +178,9 @@ create_query(noeud_question(L), query(UniqueProj, UniqueFilters, 0, Take, asc(no
     create_take(L, Take).
 
 create_projections([], [nom]).
-create_projections([noeud_critere([Crit | Lcritere]) | T], [Crit | LProj]) :-
-    create_projections(Lcritere, R),
+create_projections([noeud_critere(Lcritere) | T], LProj) :-
     create_projections(T, L),
-    append(L, R, LProj).
+    append(Lcritere, L, LProj).
 create_projections([noeud_object(Lo) | T], LProj) :-
     create_projections(Lo, R),
     create_projections(T, L),

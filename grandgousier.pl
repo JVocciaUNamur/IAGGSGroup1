@@ -21,27 +21,13 @@ produire_reponse_heuristique([fin], [L1]) :-
     L1 = [merci, de, m, '\'', avoir, consulte], !.
 
 produire_reponse(Question, Reponse) :-
-    write('Mots d\'entrée : '), writeln(Question), % Debug
     nettoyer_mots(Question, MotsNettoyes),
-    write('Mots nettoyes : '), writeln(MotsNettoyes), % Debug
     harmoniser_mots(MotsNettoyes, MotsHarmonises),
-    write('Mots harmonises : '), writeln(MotsHarmonises), % Debu   
     standardise_nom_vin(MotsHarmonises, NomVinStandardises),
-    write('Nom vin standardises: '), writeln(NomVinStandardises),!,
     phrase(parse_question(ParsedQuestion), NomVinStandardises, _),
-    write('Parsed Question: '), writeln(ParsedQuestion),
+    write('ParsedQuestion: '), writeln(ParsedQuestion),
     create_query(ParsedQuestion, Query),
-    write('Parsed query: '), writeln(Query),
-    execute_query(Query, Resultat),
-    write('Results: '), writeln(Resultat),
-    regle_rep(_, ParsedQuestion, Resultat, ListeReponses),
-
-    % Filtrer les réponses non pertinentes
-    include(non_vide, ListeReponses, FiltreReponses),
-    write('Réponses filtrées : '), writeln(FiltreReponses), % Debug
-
-    FiltreReponses = [Reponse | _].
-   
+    regle_rep(Query, Reponse).
 
 % Vérifie si une réponse est valide
 non_vide(L) :- L \= [].

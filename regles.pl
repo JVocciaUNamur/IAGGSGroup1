@@ -1,4 +1,6 @@
 % regles.pl
+:- [vins].
+:- [query].
 
 % Définition des règles pour répondre aux questions des utilisateurs
 % regle_rep(MotCle, Contexte, Pattern, Reponse)
@@ -10,43 +12,84 @@
 :- discontiguous regle_rep/4.
 
 % Règle générique pour formater les résultats obtenus depuis query.pl
-regle_rep(_, ArbreSyntaxique, Resultats, Reponse) :-
-    valide_arbre(ArbreSyntaxique),
-	write('ArbreSyntaxique : '), writeln(ArbreSyntaxique), % Debug
-    format_reponse(ArbreSyntaxique, Resultats, Reponse),
-	write('Resultats /:'), writeln(Resultats), % Debug
-	write('Reponse /:'), writeln(Reponse). 
 
-% Validation de l'arbre syntaxique
-valide_arbre(noeud_question(_)).
+regle_rep(Query, [Reponse]) :- 
+    Query = query(Lproj,_,_,1,_),
+    subset([nom, annee], Lproj),
+    length(Lproj, L), L is 3,
+    execute_query(Query, Resultat),
+    Resultat = [VinTrouve | _],
+    writeln(VinTrouve),
+    result_values([nom, annee], Lproj, VinTrouve, [Nom, Annee]),
+    subtract(Lproj, [nom, annee], [Proj | _]),
+    format_projection(Proj, FormattedProj),
+    result_values([Proj], Lproj, VinTrouve, [Description]),
+    ReponsePattern = ['Le',  Nom, Annee, 'possède', FormattedProj, 'suivant(e):', Description],
+    atomic_list_concat(ReponsePattern, ' ', Reponse).
 
-% Format réponses selon le type de question et le nombre de résultats
-format_reponse(_, [], [['Je suis desole, aucun vin ne correspond a vos criteres.']]).
+regle_rep(Query, [Reponse | Lignes]) :- 
+    Query = query(Lproj,_,_,1,_),
+    write(Lproj),
+    subset([nom, annee], Lproj),
+    length(Lproj, L), L > 3,
+    execute_query(Query, Resultat),
+    Resultat = [VinTrouve | _],
+    writeln(VinTrouve),
+    result_values([nom, annee], Lproj, VinTrouve, [Nom, Annee]),
+    subtract(Lproj, [nom, annee], RestProj),
+    ReponsePattern = ['Le',  Nom, Annee, 'possède', 'les', 'caractéristiques', 'suivantes:'],
+    atomic_list_concat(ReponsePattern, ' ', Reponse),
+    format_caracteristiques(RestProj, VinTrouve, Lignes). 
 
-% Format pour une question avec plusieurs résultats
-format_reponse(_, Resultats, [['Voici', NVins, 'vins qui correspondent a vos criteres', ':', ListeVins]]) :-
-    length(Resultats, N),
-    N > 1,
-    number_chars(N, NChars),
-    atom_chars(NVins, NChars),
-    maplist(format_result_line, Resultats, LignesFormatees),
-    atomic_list_concat(LignesFormatees, ', ', ListeVins).
+regle_rep(Query, [Reponse | Lignes]) :- 
+    Query = query(Lproj,_,_,1,_),
+    write(Lproj),
+    member(nom, Lproj),
+    length(Lproj, L), L > 2,
+    execute_query(Query, Resultat),
+    Resultat = [VinTrouve | _],
+    writeln(VinTrouve),
+    result_values([nom], Lproj, VinTrouve, [Nom]),
+    subtract(Lproj, [nom], RestProj),
+    ReponsePattern = ['Le',  Nom, 'possède', 'les', 'caractéristiques', 'suivantes:'],
+    atomic_list_concat(ReponsePattern, ' ', Reponse),
+    format_caracteristiques(RestProj, VinTrouve, Lignes). 
 
-% Format pour un seul résultat (hors nez - bouche)
-format_reponse(_, [Resultat], [['Voici le vin trouve :', ListeVins]]) :-
-    maplist(format_result_line, [Resultat], LignesFormatees),
-    atomic_list_concat(LignesFormatees, ', ', ListeVins).
+regle_rep(Query, [Reponse]) :- 
+    Query = query(Lproj,_,_,1,_),
+    member(nom, Lproj),
+    length(Lproj, L), L is 2,
+    execute_query(Query, Resultat),
+    Resultat = [VinTrouve | _],
+    writeln(VinTrouve),
+    result_values([nom], Lproj, VinTrouve, [Nom]),
+    subtract(Lproj, [nom], [Proj | _]),
+    format_projection(Proj, FormattedProj),
+    result_values([Proj], Lproj, VinTrouve, [Description]),
+    ReponsePattern = ['Le',  Nom, 'possède', FormattedProj, 'suivant(e):', Description],
+    atomic_list_concat(ReponsePattern, ' ', Reponse).
 
-% Format pour une question sur le nez ou la bouche d'un vin spécifique
-format_reponse(noeud_question([noeud_critere(TypeInfo), noeud_nom_vin(Nom)]), Resultats, Reponse) :-
-    (TypeInfo = nez ; TypeInfo = bouche),
-    !,  % Important : coupe pour empêcher le backtracking vers les autres règles
-    memberchk([Description], Resultats),  % Prend la première description trouvée
-    Reponse = [[TypeInfo, 'du', Nom, ':', Description]].
+format_projection(bouche, 'la bouche').
+format_projection(nez, 'le nez').
+format_projection(annee, 'le millesime').
+format_projection(appelation, 'l\'appelation').
+format_projection(prix, 'le prix').
+format_projection(localite, 'la localite').
+format_projection(description, 'la description').
 
-% Formate chaque ligne de résultat en une chaîne lisible
-format_result_line(Resultat, Ligne) :-
-    atomic_list_concat(Resultat, ' - ', Ligne).
+format_caracteristiques([], _, []).
+format_caracteristiques([X | Lproj], [Description | Vin], [Ligne | Lignes]) :-
+    atomic_list_concat(['-', X, ':', Description], ' ', Ligne),
+    format_caracteristiques(Lproj, Vin, Lignes).
 
-% Règle par défaut si aucune autre ne correspond
-regle_rep(_, _, _, [['Je suis desole, je ne comprends pas votre question.']]).
+result_values([], _, _, []).
+result_values(_, _, [], []).
+result_values([ReqVal | ReqValues], Lproj, Lvalues, [Result | Lresult]) :-
+    indexOf(ReqVal, Lproj, ReqValIx),
+    nth0(ReqValIx, Lvalues, Result),
+    result_values(ReqValues, Lproj, Lvalues, Lresult).
+
+test_match_regle :- 
+    match_question_regle(noeud_question([noeud_object([noeud_nom_vin(clos_des_vignes)]),noeud_critere([bouche])]), [noeud_object([noeud_nom_vin(_, _)]), noeud_critere([bouche])]).
+test_result_values(Values) :-
+    result_values([nom, bouche, prix], [prix, nom, bouche], [12, 'domaine de clairval', 'fruité'], Values).
