@@ -41,10 +41,23 @@ produire_reponse(Question, Reponse) :-
     regle_rep(Query, Reponse),!.
 produire_reponse(_, ['Je suis désolé je ne comprends pas votre question.']). 
 demande_plus_de_resultats(Question) :- subset(['autres', 'vins'], Question).
+demande_plus_de_resultats(Question) :- subset(['autres', 'chose'], Question).
+demande_plus_de_resultats(Question) :- subset(['autres', 'suggestions'], Question).
+demande_plus_de_resultats(Question) :- subset(['autres', 'propositions'], Question).
+demande_plus_de_resultats(Question) :- subset(['autres', 'idees'], Question).
+demande_plus_de_resultats(Question) :- subset(['autres', 'choix'], Question).
+demande_plus_de_resultats(Question) :- subset(['dautres', 'vins'], Question).
+demande_plus_de_resultats(Question) :- subset(['dautres', 'choses'], Question).
+demande_plus_de_resultats(Question) :- subset(['dautres', 'suggestions'], Question).
+demande_plus_de_resultats(Question) :- subset(['dautres', 'propositions'], Question).
+demande_plus_de_resultats(Question) :- subset(['dautres', 'idees'], Question).
+demande_plus_de_resultats(Question) :- subset(['dautres', 'choix'], Question).
 demande_plus_de_resultats(Question) :- subset(['plus', 'de', 'vins'], Question).
 demande_plus_de_resultats(Question) :- subset(['plus', 'de', 'suggestions'], Question).
-demande_plus_de_resultats(Question) :- subset(['autres', 'suggestions'], Question).
-demande_plus_de_resultats(Question) :- subset(['de', 'nouvelles','suggestions'], Question).
+demande_plus_de_resultats(Question) :- subset(['plus', 'de', 'propositions'], Question).
+demande_plus_de_resultats(Question) :- subset(['plus', 'de', 'idees'], Question).
+demande_plus_de_resultats(Question) :- subset(['plus', 'didees'], Question).
+demande_plus_de_resultats(Question) :- subset(['plus', 'de', 'choix'], Question).
 
 /* --------------------------------------------------------------------- */
 /*                                                                       */

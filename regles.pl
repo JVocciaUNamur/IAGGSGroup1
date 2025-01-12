@@ -120,8 +120,9 @@ format_reponses([], _, []).
 format_reponses([Rep | Rest], Lproj, [Ligne | Lignes]) :- 
     member(prix, Lproj),
     member(nom, Lproj),
-    result_values([prix, nom], Lproj, Rep, [Prix, Nom]),
-    atomic_list_concat(['-', Nom, Prix], ' ', Ligne),
+    member(annee, Lproj),
+    result_values([prix, nom, annee], Lproj, Rep, [Prix, Nom, Annee]),
+    atomic_list_concat(['*', Nom, Annee, '-', Prix], ' ', Ligne),
     format_reponses(Rest, Lproj, Lignes).
 
 format_last(Nquery, Resultats, List) :-
