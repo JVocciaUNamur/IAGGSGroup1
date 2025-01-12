@@ -1,5 +1,6 @@
 % grandgousier.pl
 :- set_prolog_flag(encoding, utf8).
+:- dynamic previous_query/1.
 
 :- [vins].
 :- [query].
@@ -18,16 +19,33 @@
 /* --------------------------------------------------------------------- */
 
 produire_reponse([fin], [L1]) :-
-    L1 = 'Merci de m\'avoir consulté.', !.
+    L1 = 'Merci de m\'avoir consulté.', !, retractall(previous_query(_)).
 produire_reponse(Question, Reponse) :-
     nettoyer_mots(Question, MotsNettoyes),
     harmoniser_mots(MotsNettoyes, MotsHarmonises),
     standardise_nom_vin(MotsHarmonises, NomVinStandardises),
-    phrase(parse_question(ParsedQuestion), NomVinStandardises, _),!,
-    create_query(ParsedQuestion, Query),
+    (
+        (previous_query(PreviousQuery), demande_plus_de_resultats(NomVinStandardises)) -> 
+        (
+            PreviousQuery = query(Lproj, Lfilters, Skip, Take, Sort),
+            NewSkip is Skip + Take,
+            Query = query(Lproj, Lfilters, NewSkip, Take, Sort) 
+        ) ;
+        (
+            phrase(parse_question(ParsedQuestion), NomVinStandardises, _),
+            create_query(ParsedQuestion, Query)
+        )
+    )
+    ,!,
+    retractall(previous_query(_)),
+    assertz(previous_query(Query)),
     regle_rep(Query, Reponse).
 produire_reponse(_, ['Je suis désolé je ne comprends pas votre question.']). 
-
+demande_plus_de_resultats(Question) :- subset(['autres', 'vins'], Question).
+demande_plus_de_resultats(Question) :- subset(['plus', 'de', 'vins'], Question).
+demande_plus_de_resultats(Question) :- subset(['plus', 'de', 'suggestions'], Question).
+demande_plus_de_resultats(Question) :- subset(['autres', 'suggestions'], Question).
+demande_plus_de_resultats(Question) :- subset(['de', 'nouvelles','suggestions'], Question).
 /* --------------------------------------------------------------------- */
 /*                                                                       */
 /*          CONVERSION D'UNE QUESTION DE L'UTILISATEUR EN                */
