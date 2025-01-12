@@ -116,7 +116,7 @@ parse_prix_inf(noeud_prix(lte, P)) --> prix_num(P).
 parse_prix_inf(P) --> [Pref], parse_prix_inf(P), {prix_inf_prefix(L), member(Pref, L)}. 
 prix_entre_prefix([entre]).
 prix_entre_separator([et]).
-parse_prix_entre(noeud_prix(in, [Pmin, Pmax])) --> [Pref], prix_num(Pmin) , [Sep], prix_num(Pmax), {prix_entre_prefix(LPref), member(Pref, LPref), prix_entre_separator(LSep), member(Sep, LSep)}.
+parse_prix_entre(noeud_prix(in, Pmin, Pmax)) --> [Pref], prix_num(Pmin) , [Sep], prix_num(Pmax), {prix_entre_prefix(LPref), member(Pref, LPref), prix_entre_separator(LSep), member(Sep, LSep)}.
 
 prefix_annee([de, millesime, annee]).
 parse_annee(noeud_annee(eq, Annee)) --> [Annee], {number(Annee), Annee >= 1000, Annee =< 9999}.

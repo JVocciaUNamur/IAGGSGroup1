@@ -32,7 +32,7 @@ produire_reponse(Question, Reponse) :-
         ) ;
         (
             phrase(parse_question(ParsedQuestion), NomVinStandardises, _),
-            create_query(ParsedQuestion, Query)
+            create_query(ParsedQuestion, Query) 
         )
     )
     ,!,

@@ -509,6 +509,7 @@ accord(viandes, 'steak').
 accord(viandes, 'poulet').
 accord(viandes, 'dinde').
 accord(viandes, 'agneau').
+accord(viandes, 'canard').
 accord(viandes, 'viande').
 accord(viandes, 'viandes').
 
