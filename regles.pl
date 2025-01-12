@@ -69,6 +69,76 @@ regle_rep(Query, [Reponse]) :-
     ReponsePattern = ['Le',  Nom, 'possède', FormattedProj, 'suivant(e):', Description],
     atomic_list_concat(ReponsePattern, ' ', Reponse).
 
+regle_rep(Query, [Reponse | Responses]) :-
+    Query = query(Lproj, Lfiltres, _, N, _),
+    execute_query(Query, Resultat),
+    length(Resultat, RLength), RLength > 0,
+    format_filtres(Lfiltres, Filtres),
+    LReponse = ['Voici une selection de vins', Filtres, ':'],
+    atomic_list_concat(LReponse, ' ', Reponse),
+    format_reponses(Resultat, Lproj, Lignes),
+    format_last(N, Resultat, Last),
+    append(Lignes, Last, Responses).
+
+regle_rep(Query, ['Je n\'ai malheureusement aucun vin correspondant a vos critères dans ma cave.']) :-
+    execute_query(Query, Resultat),
+    length(Resultat, RLength), RLength is 0.
+
+format_filtres(Filtres, FormatFiltres) :-
+    findall(Res, filtre_format(Filtres, Res), LFiltresFormat),
+    atomic_list_concat(LFiltresFormat, ' ', FormatFiltres).
+format_filtres(_, 'correspondant a vos critères').
+
+filtre_format(Filtres, 'rouges') :- member([couleur, eq, rouge], Filtres).
+filtre_format(Filtres, 'blancs') :- member([couleur, eq, blanc], Filtres).
+filtre_format(Filtres, 'rosés') :- member([couleur, eq, rose], Filtres).
+filtre_format(Filtres, Result) :- 
+    member([appelation, eq, Appelation], Filtres),
+    L = ['d\'appelation', Appelation],
+    atomic_list_concat(L, ' ', Result).
+filtre_format(Filtres, Result) :- 
+    member([localite, eq, Localite], Filtres),
+    L = ['de la région de', Localite],
+    atomic_list_concat(L, ' ', Result).
+filtre_format(Filtres, Result) :- 
+    member([accord, eq, Accord], Filtres),
+    L = ['pour accompagner la/le(s)', Accord],
+    atomic_list_concat(L, ' ', Result).
+filtre_format(Filtres, Result) :-
+    member([prix, gte, Pmin], Filtres),
+    member([prix, lte, Pmax], Filtres),!,
+    L = ['dont le prix est supérieur à', Pmin, 'eur et inférieur à', Pmax],
+    atomic_list_concat(L, ' ', Result).
+filtre_format(Filtres, Result) :-
+    member([prix, gte, Pmin], Filtres),
+    L = ['dont le prix est supérieur à', Pmin],
+    atomic_list_concat(L, ' ', Result).
+filtre_format(Filtres, Result) :-
+    member([prix, lte, Pmax], Filtres),
+    L = ['dont le prix est inférieur à', Pmax],
+    atomic_list_concat(L, ' ', Result).
+filtre_format(Filtres, Result) :-
+    member([prix, eq, P], Filtres),
+    L = ['dont le prix est egal à', P],
+    atomic_list_concat(L, ' ', Result).
+
+format_reponses([], _, []).
+format_reponses([Rep | Rest], Lproj, [Ligne | Lignes]) :- 
+    member(prix, Lproj),
+    member(nom, Lproj),
+    result_values([prix, nom], Lproj, Rep, [Prix, Nom]),
+    atomic_list_concat(['-', Nom, Prix], ' ', Ligne),
+    format_reponses(Rest, Lproj, Lignes).
+
+format_last(Nquery, Resultats, List) :-
+    length(Resultats, ResLength),
+    Nquery > ResLength,
+    List = ['Si l’un de ces vins retient votre attention, je me ferai un plaisir de vous fournir davantage d’informations.'].
+
+format_last(_, _, List) :-
+    List = ['N’hésitez pas à me solliciter pour d’autres suggestions si celles-ci ne vous conviennent pas.',
+    'Sinon, si l’un de ces vins retient votre attention, je me ferai un plaisir de vous fournir davantage d’informations.'].
+
 format_projection(bouche, 'la bouche').
 format_projection(nez, 'le nez').
 format_projection(annee, 'le millesime').
@@ -79,7 +149,7 @@ format_projection(description, 'la description').
 
 format_caracteristiques([], _, []).
 format_caracteristiques([X | Lproj], [Description | Vin], [Ligne | Lignes]) :-
-    atomic_list_concat(['-', X, ':', Description], ' ', Ligne),
+    atomic_list_concat(['*', X, ':', Description], ' ', Ligne),
     format_caracteristiques(Lproj, Vin, Lignes).
 
 result_values([], _, _, []).

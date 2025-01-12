@@ -185,24 +185,10 @@ create_projections([noeud_object(Lo) | T], LProj) :-
     create_projections(Lo, R),
     create_projections(T, L),
     append(L, R, LProj).
-create_projections([noeud_context(_) | T], [accord | LProj]) :- 
+create_projections([noeud_context(_) | T], [annee, prix, accord | LProj]) :- 
     create_projections(T, LProj).
-create_projections([noeud_vin(L) | T], AllProjections) :- 
-    create_projections(L, Projections), 
-    create_projections(T, RestProjections),
-    append(Projections, RestProjections, AllProjections).
-create_projections([noeud_prix(_, _) | T], [prix | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([noeud_prix(_, _, _) | T], [prix | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([noeud_annee(_, _) | T], [annee | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([noeud_localite(_) | T], [localite | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([noeud_appelation(_) | T], [appelation | Projections]) :- 
-    create_projections(T, Projections).
-create_projections([noeud_couleur(_) | T], [couleur | Projections]) :-
-    create_projections(T, Projections).
+create_projections([noeud_vin(_) | T], [annee, prix | RestProjections]) :- 
+    create_projections(T, RestProjections).
 create_projections([noeud_nom_vin(_,_) | T], [annee | Projections]) :-
     create_projections(T, Projections).
 create_projections([_ | T], Projections) :- 

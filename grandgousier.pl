@@ -25,7 +25,6 @@ produire_reponse(Question, Reponse) :-
     harmoniser_mots(MotsNettoyes, MotsHarmonises),
     standardise_nom_vin(MotsHarmonises, NomVinStandardises),
     phrase(parse_question(ParsedQuestion), NomVinStandardises, _),
-    write('ParsedQuestion: '), writeln(ParsedQuestion),
     create_query(ParsedQuestion, Query),
     regle_rep(Query, Reponse).
 
