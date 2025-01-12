@@ -19,7 +19,6 @@ regle_rep(Query, [Reponse]) :-
     length(Lproj, L), L is 3,
     execute_query(Query, Resultat),
     Resultat = [VinTrouve | _],
-    writeln(VinTrouve),
     result_values([nom, annee], Lproj, VinTrouve, [Nom, Annee]),
     subtract(Lproj, [nom, annee], [Proj | _]),
     format_projection(Proj, FormattedProj),
@@ -34,7 +33,6 @@ regle_rep(Query, [Reponse | Lignes]) :-
     length(Lproj, L), L > 3,
     execute_query(Query, Resultat),
     Resultat = [VinTrouve | _],
-    writeln(VinTrouve),
     result_values([nom, annee], Lproj, VinTrouve, [Nom, Annee]),
     subtract(Lproj, [nom, annee], RestProj),
     ReponsePattern = ['Le',  Nom, Annee, 'possède', 'les', 'caractéristiques', 'suivantes:'],
@@ -48,7 +46,6 @@ regle_rep(Query, [Reponse | Lignes]) :-
     length(Lproj, L), L > 2,
     execute_query(Query, Resultat),
     Resultat = [VinTrouve | _],
-    writeln(VinTrouve),
     result_values([nom], Lproj, VinTrouve, [Nom]),
     subtract(Lproj, [nom], RestProj),
     ReponsePattern = ['Le',  Nom, 'possède', 'les', 'caractéristiques', 'suivantes:'],
@@ -61,7 +58,6 @@ regle_rep(Query, [Reponse]) :-
     length(Lproj, L), L is 2,
     execute_query(Query, Resultat),
     Resultat = [VinTrouve | _],
-    writeln(VinTrouve),
     result_values([nom], Lproj, VinTrouve, [Nom]),
     subtract(Lproj, [nom], [Proj | _]),
     format_projection(Proj, FormattedProj),
@@ -80,7 +76,7 @@ regle_rep(Query, [Reponse | Responses]) :-
     format_last(N, Resultat, Last),
     append(Lignes, Last, Responses).
 
-regle_rep(Query, ['Je n\'ai malheureusement aucun vin correspondant a vos critères dans ma cave.']) :-
+regle_rep(Query, ['Je n\'ai malheureusement aucun vin correspondant à vos critères dans ma cave.']) :-
     execute_query(Query, Resultat),
     length(Resultat, RLength), RLength is 0.
 

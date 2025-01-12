@@ -366,7 +366,7 @@ get_projection(Id, localite, Value) :-
 get_projection(Id, description, Value) :-
     description(Id, Desc),
     flatten(Desc, FDesc),
-    atomic_list_concat(FDesc, '.', Value).
+    atomic_list_concat(FDesc, ' ', Value).
 get_projection(Id, accord, Value) :- accord(Id, Value).
     
 %TEST

@@ -8,7 +8,7 @@
 
 /* --------------------------------------------------------------------- */
 /*                                                                       */
-/*        PRODUIRE_REPONSE_HEURISTIQUE(L_Mots,L_Lignes_reponse) :        */
+/*        PRODUIRE_REPONSE(L_Mots,L_Lignes_reponse) :        */
 /*                                                                       */
 /*        Input : une liste de mots L_Mots representant la question      */
 /*                de l'utilisateur                                       */
@@ -17,40 +17,16 @@
 /*                                                                       */
 /* --------------------------------------------------------------------- */
 
-produire_reponse_heuristique([fin], [L1]) :-
-    L1 = [merci, de, m, '\'', avoir, consulte], !.
-
+produire_reponse([fin], [L1]) :-
+    L1 = 'Merci de m\'avoir consulté.', !.
 produire_reponse(Question, Reponse) :-
     nettoyer_mots(Question, MotsNettoyes),
     harmoniser_mots(MotsNettoyes, MotsHarmonises),
     standardise_nom_vin(MotsHarmonises, NomVinStandardises),
-    phrase(parse_question(ParsedQuestion), NomVinStandardises, _),
+    phrase(parse_question(ParsedQuestion), NomVinStandardises, _),!,
     create_query(ParsedQuestion, Query),
     regle_rep(Query, Reponse).
-
-% Vérifie si une réponse est valide
-non_vide(L) :- L \= [].
-
-trouver_toutes_reponses([], _, []).
-trouver_toutes_reponses([Mot-_|Rest], L_mots, [Reponse|AutresReponses]) :-
-    (   regle_rep(Mot, _, Pattern, ReponsePotentielle),
-        verifier_pattern(Pattern, L_mots)
-    ->  Reponse = ReponsePotentielle
-    ;   Reponse = []),
-    trouver_toutes_reponses(Rest, L_mots, AutresReponses).
-
-generer_reponse([], _, [['Je suis désolé, je ne trouve pas de réponse.']]).
-generer_reponse([Mot-_|Rest], L_mots, L_lignes_reponse) :-
-    (   regle_rep(Mot, _, Pattern, Reponse),
-        verifier_pattern(Pattern, L_mots)
-    ->  LignesReponseActuelle = Reponse
-    ;   LignesReponseActuelle = []),
-    generer_reponse(Rest, L_mots, LignesReponseSuivante),
-    append(LignesReponseActuelle, LignesReponseSuivante, L_lignes_reponse).
-
-% Vérifie si tous les mots du Pattern sont présents dans la liste de mots
-verifier_pattern(Pattern, Mots) :-
-    subset(Pattern, Mots).
+produire_reponse(_, ['Je suis désolé je ne comprends pas votre question.']). 
 
 /* --------------------------------------------------------------------- */
 /*                                                                       */
@@ -175,4 +151,4 @@ afficher_lignes([Ligne|Rest]) :-
 /*                                                                       */
 /* --------------------------------------------------------------------- */
 
-%:- grandgousier.
+:- grandgousier.
