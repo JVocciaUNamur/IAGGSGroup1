@@ -21,8 +21,7 @@
 produire_reponse([fin], [L1]) :-
     L1 = 'Merci de m\'avoir consulté.', !, retractall(previous_query(_)),!.
 produire_reponse(Question, Reponse) :-
-    nettoyer_mots(Question, MotsNettoyes),
-    harmoniser_mots(MotsNettoyes, MotsHarmonises),
+    harmoniser_mots(Question, MotsHarmonises),
     standardise_nom_vin(MotsHarmonises, NomVinStandardises),
     (
         (previous_query(PreviousQuery), demande_plus_de_resultats(NomVinStandardises)) -> 

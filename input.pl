@@ -26,20 +26,6 @@ heuristique('bouchées', 'bouche').
 heuristique('dispo', 'disponible').
 heuristique('en_stock', 'disponible').
 
-% Nettoie les mots inutiles
-nettoyer_mots([], []).
-nettoyer_mots([Mot|Reste], [MotNettoye|ResteNettoyes]) :-
-    downcase_atom(Mot, MotMinuscule),
-    atom_codes(MotMinuscule, Codes),
-    include(code_utilisable, Codes, CodesUtilisables),
-    atom_codes(MotNettoye, CodesUtilisables),
-    atom_length(MotNettoye, LM),
-    LM > 0,
-    nettoyer_mots(Reste, ResteNettoyes).
-nettoyer_mots([_ | Rest], ResteNettoyes) :- nettoyer_mots(Rest, ResteNettoyes).
-
-code_utilisable(Code) :- char_type(Char, alnum), char_code(Char, Code).
-
 % Appliquer les heuristiques pour corriger les mots et gérer les synonymes
 harmoniser_mots([], []).
 harmoniser_mots([Mot|Reste], [MotCorrige|ResteCorrige]) :-
