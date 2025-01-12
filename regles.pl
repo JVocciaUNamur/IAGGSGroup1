@@ -66,11 +66,25 @@ regle_rep(Query, [Reponse]) :-
 regle_rep(Query, [Reponse | Responses]) :-
     Query = query(Lproj, Lfiltres, _, N, _),
     execute_query(Query, Resultat),
-    length(Resultat, RLength), RLength > 0,
+    length(Resultat, RLength), RLength > 1,
     format_filtres(Lfiltres, Filtres),
     LReponse = ['Voici une selection de vins', Filtres, ':'],
     atomic_list_concat(LReponse, ' ', Reponse),
     format_reponses(Resultat, Lproj, Lignes),
+    format_last(N, Resultat, Last),
+    append(Lignes, Last, Responses).
+
+regle_rep(Query, [Reponse | Responses]) :-
+    Query = query(Lproj, Lfiltres, _, N, _),
+    execute_query(Query, Resultat),
+    length(Resultat, RLength), RLength is 1,
+    format_filtres(Lfiltres, Filtres),
+    Resultat = [VinTrouve | _],
+    result_values([prix, nom, annee], Lproj, VinTrouve, [Prix, Nom, Annee]),
+    atomic_list_concat([Nom, Annee, '-', Prix], ' ', VinDescription),
+    LReponse = ['Voici un vin', Filtres, ':'],
+    atomic_list_concat(LReponse, ' ', Reponse),
+    Lignes = [VinDescription],    
     format_last(N, Resultat, Last),
     append(Lignes, Last, Responses).
 
@@ -124,6 +138,11 @@ format_reponses([Rep | Rest], Lproj, [Ligne | Lignes]) :-
     result_values([prix, nom, annee], Lproj, Rep, [Prix, Nom, Annee]),
     atomic_list_concat(['*', Nom, Annee, '-', Prix], ' ', Ligne),
     format_reponses(Rest, Lproj, Lignes).
+
+format_last(_, Resultats, List) :-
+    length(Resultats, ResLength),
+    ResLength is 1, 
+    List = ['Si ce vin retient votre attention, je me ferai un plaisir de vous fournir davantage d’informations.'].
 
 format_last(Nquery, Resultats, List) :-
     length(Resultats, ResLength),

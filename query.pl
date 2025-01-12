@@ -145,7 +145,7 @@ parse_localite() --> [localite].
 parse_localite() --> [la], parse_localite.
 
 prefix_description([la, les, me, en]).
-mot_description([dire, decrire, description, descriptions, informations, infos, info, dinfo, dinfos]).
+mot_description([dire, decrire, description, descriptions, informations,dinformations, infos, info, dinfo, dinfos]).
 parse_description() --> [M], {mot_description(L), member(M, L)}.
 parse_description() --> [P], parse_description, {prefix_description(L), member(P, L)}.
 
