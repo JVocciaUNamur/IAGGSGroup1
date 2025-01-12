@@ -28,7 +28,6 @@ regle_rep(Query, [Reponse]) :-
 
 regle_rep(Query, [Reponse | Lignes]) :- 
     Query = query(Lproj,_,_,1,_),
-    write(Lproj),
     subset([nom, annee], Lproj),
     length(Lproj, L), L > 3,
     execute_query(Query, Resultat),
@@ -41,7 +40,6 @@ regle_rep(Query, [Reponse | Lignes]) :-
 
 regle_rep(Query, [Reponse | Lignes]) :- 
     Query = query(Lproj,_,_,1,_),
-    write(Lproj),
     member(nom, Lproj),
     length(Lproj, L), L > 2,
     execute_query(Query, Resultat),
